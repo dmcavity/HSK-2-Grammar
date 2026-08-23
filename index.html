@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>普通话 · HSK 2 Grammar Journey</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF9F3;--card:#FFFFFF;--red:#C0392B;--red-dark:#922B21;--red-light:#FDEDEC;
+  --gold:#CA8A04;--gold-light:#FEFCE8;--ink:#1C1117;--ink-soft:#6B5B62;--ink-faint:#B0A0A6;
+  --green:#166534;--green-bg:#DCFCE7;--wrong:#7F1D1D;--wrong-bg:#FEF2F2;
+  --r:14px;--sh:0 2px 16px rgba(28,17,23,.08);--shb:0 6px 32px rgba(28,17,23,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5;}
+.zh{font-family:'Noto Sans SC',sans-serif;cursor:pointer;border-radius:4px;transition:background .15s;padding:1px 3px;}
+.zh:hover{background:rgba(192,57,43,.12);}
+#app{min-height:100vh;}
+/* HOME */
+.home{max-width:680px;margin:0 auto;padding:24px 16px 40px;}
+.home-header{text-align:center;padding:40px 0 32px;}
+.home-title{font-family:'Noto Serif SC',sans-serif;font-size:2.4rem;font-weight:700;color:var(--red);letter-spacing:.02em;margin-bottom:6px;}
+.home-sub{font-size:1rem;color:var(--ink-soft);}
+.progress-banner{background:var(--card);border-radius:var(--r);padding:20px 24px;box-shadow:var(--sh);margin-bottom:28px;display:flex;align-items:center;gap:20px;}
+.progress-ring{width:64px;height:64px;flex-shrink:0;}
+.progress-info{flex:1;}
+.progress-label{font-size:.8rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.lessons-grid{display:flex;flex-direction:column;gap:12px;}
+.lesson-card{background:var(--card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);cursor:pointer;display:flex;align-items:center;gap:16px;transition:transform .15s,box-shadow .15s;border:2px solid transparent;}
+.lesson-card:hover:not(.locked){transform:translateY(-2px);box-shadow:var(--shb);border-color:var(--red-light);}
+.lesson-card.locked{opacity:.5;cursor:not-allowed;}
+.lesson-card.completed{border-color:#BBF7D0;}
+.lesson-card.in-progress{border-color:#FDE68A;}
+.lesson-num{width:44px;height:44px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0;font-family:'Noto Serif SC',sans-serif;}
+.lesson-card.completed .lesson-num{background:var(--green);}
+.lesson-card.locked .lesson-num{background:#C8B8BC;}
+.lesson-card.in-progress .lesson-num{background:var(--gold);}
+.lesson-info{flex:1;}
+.lesson-title{font-weight:600;font-size:.95rem;margin-bottom:2px;}
+.lesson-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.tag{background:var(--red-light);color:var(--red-dark);font-size:.75rem;padding:2px 8px;border-radius:99px;font-family:'Noto Sans SC',sans-serif;font-weight:500;}
+.high-score{color:var(--green);font-weight:700;font-size:1rem;}
+/* INTRO SCREEN */
+.lesson-intro{max-width:620px;margin:0 auto;padding:24px 16px;}
+.back-btn{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:.9rem;padding:4px 0;margin-bottom:20px;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;}
+.intro-header{background:var(--red);color:#fff;border-radius:var(--r);padding:28px 28px 24px;margin-bottom:20px;}
+.intro-lesson-num{font-size:.8rem;opacity:.8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.intro-title{font-size:1.6rem;font-weight:700;margin-bottom:8px;font-family:'Noto Serif SC',sans-serif;}
+.intro-desc{font-size:.9rem;opacity:.85;line-height:1.5;}
+.grammar-preview{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.gp-card{background:var(--card);border-radius:var(--r);padding:16px 20px;box-shadow:var(--sh);}
+.gp-card-top{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;}
+.gp-zh{font-family:'Noto Serif SC',sans-serif;font-size:1.5rem;color:var(--red);font-weight:700;cursor:pointer;}
+.gp-py{font-size:.85rem;color:var(--ink-soft);}
+.gp-meaning{font-size:.85rem;color:var(--ink-soft);}
+.gp-pattern{background:var(--gold-light);border-left:3px solid var(--gold);padding:6px 10px;border-radius:0 6px 6px 0;font-size:.83rem;color:#713F12;margin-top:6px;}
+.start-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:16px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s,transform .1s;}
+.start-btn:hover{background:var(--red-dark);transform:translateY(-1px);}
+.resume-btn{width:100%;background:#FEF9EE;color:var(--gold);border:2px solid #FDE68A;border-radius:var(--r);padding:14px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;margin-bottom:10px;}
+.resume-btn:hover{background:#FDE68A;}
+/* LESSON VIEW */
+.lesson-view{min-height:100vh;display:flex;flex-direction:column;}
+.lesson-topbar{background:var(--card);border-bottom:1px solid #F0E8E8;padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
+.quit-btn{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:1.1rem;padding:4px;font-weight:700;}
+.lesson-progress-wrap{flex:1;background:#F0E8E8;border-radius:99px;height:9px;overflow:hidden;}
+.lesson-progress{background:var(--red);height:100%;border-radius:99px;transition:width .4s ease;}
+.score-display{font-weight:700;color:var(--red);font-size:.9rem;min-width:36px;text-align:right;}
+.nav-btns{display:flex;gap:4px;flex-shrink:0;}
+.nav-btn{background:none;border:1.5px solid #E8DEDE;border-radius:8px;cursor:pointer;color:var(--ink-soft);font-size:.95rem;padding:4px 10px;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.nav-btn:hover:not(:disabled){border-color:var(--red);color:var(--red);}
+.nav-btn:disabled{opacity:.3;cursor:default;}
+.prompt-area{flex:1;max-width:640px;margin:0 auto;width:100%;padding:20px 16px 32px;}
+.prompt-card{background:var(--card);border-radius:20px;padding:26px 26px 22px;box-shadow:var(--shb);}
+.prompt-type-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-faint);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+/* INTRO CARD (inside lesson) */
+.intro-card-inner{text-align:center;}
+.intro-point-zh{font-family:'Noto Serif SC',sans-serif;font-size:3rem;color:var(--red);font-weight:700;cursor:pointer;border-radius:8px;padding:4px 12px;display:inline-block;transition:background .15s;}
+.intro-point-zh:hover{background:var(--red-light);}
+.intro-point-py{font-size:1rem;color:var(--ink-soft);margin:4px 0 2px;}
+.intro-point-meaning{font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:16px;}
+.intro-pattern-box{background:var(--gold-light);border:1.5px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.9rem;color:#713F12;}
+.intro-pattern-box strong{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#92400E;margin-bottom:4px;}
+.intro-explanation{font-size:.9rem;color:var(--ink-soft);margin-bottom:20px;line-height:1.6;text-align:left;}
+.intro-examples{display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:24px;}
+.intro-example{background:#F9F4F5;border-radius:10px;padding:12px 14px;}
+.ex-zh{font-family:'Noto Sans SC',sans-serif;font-size:1.15rem;margin-bottom:2px;cursor:pointer;border-radius:4px;padding:2px 4px;transition:background .15s;}
+.ex-zh:hover{background:rgba(192,57,43,.1);}
+.ex-py{font-size:.8rem;color:var(--ink-soft);margin-bottom:2px;}
+.ex-en{font-size:.85rem;color:var(--ink-soft);}
+.continue-btn{background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:14px 40px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;}
+.continue-btn:hover{background:var(--red-dark);}
+/* SPEAK */
+.speak-main{text-align:center;padding:8px 0 16px;}
+.speak-zh{font-family:'Noto Sans SC',sans-serif;font-size:2rem;line-height:1.5;margin-bottom:8px;cursor:pointer;border-radius:10px;padding:8px 12px;display:inline-block;transition:background .15s;}
+.speak-zh:hover{background:var(--red-light);}
+.speak-py{font-size:.95rem;color:var(--ink-soft);margin-bottom:4px;}
+.speak-en{font-size:.9rem;color:var(--ink-faint);margin-bottom:12px;}
+.audio-hint{font-size:.8rem;color:var(--ink-faint);margin:8px 0 4px;}
+.speak-btns{display:flex;gap:12px;margin-top:16px;justify-content:center;}
+.speak-correct{background:var(--green-bg);color:var(--green);border:2px solid #86EFAC;border-radius:var(--r);padding:12px 20px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;flex:1;max-width:200px;}
+.speak-correct:hover{background:#BBF7D0;}
+.speak-again{background:#F3F4F6;color:var(--ink-soft);border:2px solid #E5E7EB;border-radius:var(--r);padding:12px 20px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;flex:1;max-width:200px;}
+.speak-again:hover{background:#E5E7EB;}
+/* FILL */
+.sentence-display{font-family:'Noto Sans SC',sans-serif;font-size:1.5rem;line-height:1.9;text-align:center;margin:8px 0 6px;}
+.blank-box{display:inline-block;min-width:60px;border-bottom:3px solid var(--red);vertical-align:bottom;text-align:center;color:var(--red);font-weight:700;padding:0 6px;}
+.sentence-py{text-align:center;font-size:.85rem;color:var(--ink-soft);margin-bottom:4px;}
+.sentence-en{text-align:center;font-size:.84rem;color:var(--ink-faint);margin-bottom:18px;}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.option-btn{background:var(--card);border:2px solid #E8DEDE;border-radius:12px;padding:13px 10px;font-family:'Noto Sans SC',sans-serif;font-size:1.05rem;cursor:pointer;transition:all .15s;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.option-btn:hover:not(:disabled):not(.correct):not(.wrong){border-color:var(--red);background:var(--red-light);}
+.option-btn.selected{border-color:var(--red);background:var(--red-light);color:var(--red);}
+.option-btn.correct{border-color:var(--green);background:var(--green-bg);color:var(--green);pointer-events:none;}
+.option-btn.wrong{border-color:var(--wrong);background:var(--wrong-bg);color:var(--wrong);pointer-events:none;}
+.option-btn:disabled{cursor:default;}
+/* POS */
+.pos-word-display{text-align:center;margin-bottom:20px;}
+.pos-word-chip{display:inline-flex;flex-direction:column;align-items:center;gap:2px;background:var(--red);color:#fff;border-radius:12px;padding:10px 24px;font-family:'Noto Sans SC',sans-serif;font-size:1.6rem;font-weight:700;box-shadow:0 4px 12px rgba(192,57,43,.3);}
+.chip-py{font-size:.72rem;opacity:.85;font-family:'DM Sans',sans-serif;font-weight:400;}
+.pos-instruction{text-align:center;font-size:.84rem;color:var(--ink-soft);margin-bottom:16px;}
+.pos-sentence-wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;margin-bottom:16px;min-height:56px;}
+.pos-seg{font-family:'Noto Sans SC',sans-serif;font-size:1.35rem;color:var(--ink);padding:4px 2px;white-space:nowrap;}
+.pos-marker{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px dashed var(--ink-faint);color:var(--ink-faint);font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;margin:0 2px;flex-shrink:0;}
+.pos-marker:hover{border-color:var(--red);color:var(--red);background:var(--red-light);border-style:solid;}
+.pos-marker.selected{border-color:var(--red);color:#fff;background:var(--red);border-style:solid;}
+.pos-marker.correct-pos{border-color:var(--green);color:#fff;background:var(--green);border-style:solid;}
+.pos-marker.wrong-pos{border-color:var(--wrong);color:#fff;background:var(--wrong);border-style:solid;}
+.pos-marker.correct-pos-unselected{border-color:var(--green);color:var(--green);border-style:solid;}
+.pos-preview{text-align:center;min-height:30px;margin:4px 0 10px;}
+.pos-preview-text{font-family:'Noto Sans SC',sans-serif;font-size:1.05rem;color:var(--ink-soft);}
+.pos-preview-word{color:var(--red);font-weight:700;}
+/* MULTI */
+.multi-sentence{font-family:'Noto Sans SC',sans-serif;font-size:1.3rem;line-height:2.2;margin:10px 0 6px;display:flex;flex-wrap:wrap;align-items:center;gap:2px;justify-content:center;}
+.multi-seg{white-space:pre-wrap;font-family:'Noto Sans SC',sans-serif;}
+.multi-blank{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:46px;border-radius:10px;border:2.5px dashed var(--ink-faint);color:var(--ink-faint);font-size:.8rem;cursor:pointer;transition:all .2s;padding:2px 8px;margin:0 2px;position:relative;}
+.multi-blank.filled{border-style:solid;border-color:var(--red);background:var(--red-light);color:var(--red);}
+.multi-blank.filled-dash{border-style:solid;border-color:#94A3B8;background:#F1F5F9;color:#64748B;}
+.multi-blank.correct-blank{border-color:var(--green);background:var(--green-bg);color:var(--green);border-style:solid;pointer-events:none;}
+.multi-blank.wrong-blank{border-color:var(--wrong);background:var(--wrong-bg);color:var(--wrong);border-style:solid;pointer-events:none;}
+.blank-label{font-size:.62rem;font-weight:700;opacity:.7;font-family:'DM Sans',sans-serif;}
+.blank-word{font-family:'Noto Sans SC',sans-serif;font-size:1rem;font-weight:700;}
+.multi-bank-label{font-size:.76rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 8px;text-align:center;}
+.multi-bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px;}
+.bank-tile{background:var(--card);border:2px solid #E8DEDE;border-radius:10px;padding:8px 16px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:48px;}
+.bank-tile:hover:not(.used){border-color:var(--red);background:var(--red-light);}
+.bank-tile.held{border-color:var(--red);background:var(--red);color:#fff;}
+.bank-tile.used{opacity:.3;cursor:default;pointer-events:none;}
+.bank-tile.dash-tile{border-color:#94A3B8;color:#64748B;}
+.bank-tile.dash-tile.held{background:#94A3B8;border-color:#94A3B8;color:#fff;}
+.bank-tile .tile-zh{font-family:'Noto Sans SC',sans-serif;font-size:1.1rem;font-weight:700;}
+.multi-en{text-align:center;font-size:.84rem;color:var(--ink-faint);margin-bottom:4px;}
+/* WORD ORDER */
+.wordorder-answer-area{min-height:60px;background:#FAF3F4;border:2px dashed #E8DEDE;border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+.wordorder-answer-area.has-words{border-style:solid;border-color:var(--red-light);}
+.answer-placeholder{color:var(--ink-faint);font-size:.84rem;width:100%;text-align:center;}
+.wordorder-tiles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.word-tile{background:var(--card);border:2px solid #E8DEDE;border-radius:10px;padding:8px 13px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;}
+.word-tile:hover{border-color:var(--red);background:var(--red-light);}
+.word-tile.used{opacity:.3;cursor:default;background:#F5F0F0;pointer-events:none;}
+.tile-zh{font-family:'Noto Sans SC',sans-serif;font-size:1.1rem;font-weight:500;}
+.tile-py{font-size:.62rem;color:var(--ink-soft);}
+.answer-tile{background:var(--red-light);border:2px solid var(--red);border-radius:10px;padding:8px 13px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.answer-tile:hover{background:#FCC2C2;}
+.answer-tile.correct-tile{background:var(--green-bg);border-color:var(--green);pointer-events:none;}
+.answer-tile.wrong-tile{background:var(--wrong-bg);border-color:var(--wrong);pointer-events:none;}
+/* TRANSLATE */
+.translate-zh{font-family:'Noto Sans SC',sans-serif;font-size:1.55rem;text-align:center;cursor:pointer;border-radius:10px;padding:8px 12px;display:inline-block;transition:background .15s;margin-bottom:4px;}
+.translate-zh:hover{background:var(--red-light);}
+.translate-py{text-align:center;font-size:.84rem;color:var(--ink-soft);margin-bottom:16px;}
+.translate-center{text-align:center;}
+/* SHARED */
+.check-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:14px;transition:background .15s;}
+.check-btn:hover:not(:disabled){background:var(--red-dark);}
+.check-btn:disabled{background:#C8B8BC;cursor:default;}
+.next-btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;transition:background .15s;}
+.next-btn:hover{background:#3D2E33;}
+.feedback-bar{margin-top:12px;border-radius:12px;padding:12px 15px;display:flex;align-items:flex-start;gap:10px;font-weight:500;font-size:.9rem;}
+.feedback-bar.correct{background:var(--green-bg);color:var(--green);}
+.feedback-bar.wrong{background:var(--wrong-bg);color:var(--wrong);}
+.feedback-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.feedback-detail{font-size:.82rem;opacity:.85;margin-top:3px;}
+.audio-btn{background:var(--red-light);border:1.5px solid transparent;color:var(--red);border-radius:99px;padding:6px 14px;font-size:.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .15s;margin-top:4px;}
+.audio-btn:hover{background:#FCC2C2;border-color:var(--red);}
+/* COMPLETE */
+.complete{max-width:560px;margin:0 auto;padding:24px 16px 40px;}
+.complete-card{background:var(--card);border-radius:20px;padding:36px 28px 28px;box-shadow:var(--shb);text-align:center;margin-bottom:20px;}
+.complete-trophy{font-size:4rem;margin-bottom:12px;}
+.complete-title{font-family:'Noto Serif SC',sans-serif;font-size:1.8rem;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.complete-sub{font-size:.9rem;color:var(--ink-soft);margin-bottom:24px;}
+.score-big{font-size:5rem;font-weight:700;color:var(--red);font-family:'Noto Serif SC',sans-serif;line-height:1;}
+.score-label{font-size:.84rem;color:var(--ink-soft);margin-bottom:8px;}
+.high-score-badge{display:inline-block;background:var(--gold-light);color:var(--gold);border:1.5px solid #FDE68A;border-radius:99px;padding:4px 14px;font-size:.8rem;font-weight:600;margin-top:6px;}
+.stats-row{display:flex;gap:12px;margin:22px 0 18px;}
+.stat-box{flex:1;background:#FAF5F5;border-radius:12px;padding:14px 10px;text-align:center;}
+.stat-num{font-size:1.6rem;font-weight:700;color:var(--ink);}
+.stat-label{font-size:.74rem;color:var(--ink-soft);margin-top:2px;}
+.complete-actions{display:flex;flex-direction:column;gap:10px;}
+.action-btn{border-radius:var(--r);padding:14px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:2px solid transparent;transition:all .15s;}
+.action-btn.primary{background:var(--red);color:#fff;border-color:var(--red);}
+.action-btn.primary:hover{background:var(--red-dark);}
+.action-btn.secondary{background:var(--card);color:var(--ink);border-color:#E8DEDE;}
+.action-btn.secondary:hover{border-color:var(--red);color:var(--red);}
+
+/* ── MIC / PRONUNCIATION UI ─────────────────────────────────────────── */
+.mic-btn{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--r);padding:15px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s;}
+.mic-btn:hover{background:var(--red-dark);transform:translateY(-1px);}
+.mic-btn.listening{background:#7F1D1D;animation:pulseBtn 1.2s ease-in-out infinite;}
+.mic-stop-btn{width:100%;background:#7F1D1D;color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:12px;transition:background .15s;}
+.mic-stop-btn:hover{background:#991B1B;}
+
+.mic-error-card{background:#FEF2F2;border:1.5px solid #FECACA;border-radius:14px;padding:18px 16px;margin:12px 0 4px;}
+.mic-error-icon{font-size:2rem;margin-bottom:8px;text-align:center;}
+.mic-error-title{font-weight:700;font-size:1rem;color:var(--wrong);margin-bottom:10px;text-align:center;}
+.mic-error-body{font-size:.85rem;color:#7F1D1D;line-height:1.6;}
+.mic-error-body ol{padding-left:18px;margin:8px 0;}
+.mic-error-body ol li{margin-bottom:5px;}
+.mic-error-body code{background:rgba(127,29,29,.1);border-radius:4px;padding:1px 5px;font-size:.82rem;}
+.self-report-link{display:block;width:100%;background:none;border:none;color:var(--ink-faint);font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;text-decoration:underline;text-underline-offset:3px;padding:4px;}
+.self-report-link:hover{color:var(--ink-soft);}
+.pitch-canvas-wrap{border-radius:12px;overflow:hidden;margin:14px 0 8px;border:1.5px solid #F0E8E8;position:relative;background:#FAF3F4;}
+.mic-status{display:flex;align-items:center;gap:8px;font-size:.83rem;color:var(--ink-soft);margin:6px 0 10px;justify-content:center;}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulseBtn 1s ease-in-out infinite;}
+@keyframes pulseBtn{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(.95);}}
+.tone-guide{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 4px;}
+.tone-pill{display:flex;align-items:center;gap:5px;background:#FAF3F4;border:1.5px solid #F0E8E8;border-radius:99px;padding:5px 10px;font-size:.78rem;}
+.tone-pill-py{font-size:.88rem;color:var(--ink);font-weight:500;}
+.tone-pill-num{font-size:.7rem;font-weight:700;color:var(--gold);background:var(--gold-light);border-radius:99px;padding:1px 5px;font-family:'DM Sans',sans-serif;}
+.tone-shape-svg{display:inline-block;vertical-align:middle;margin-right:2px;}
+.transcript-compare{background:#FAF3F4;border-radius:12px;padding:12px 14px;margin:12px 0 6px;}
+.tc-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;font-size:.85rem;}
+.tc-label{color:var(--ink-faint);font-size:.76rem;width:60px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em;}
+.tc-chars{font-family:'Noto Sans SC',sans-serif;font-size:1.2rem;display:flex;flex-wrap:wrap;gap:2px;}
+.tc-char.match{color:var(--green);}
+.tc-char.miss{color:var(--wrong);text-decoration:underline;text-decoration-color:var(--wrong);}
+.tc-char.neutral{color:var(--ink-soft);}
+.tc-pct{font-size:.82rem;color:var(--ink-soft);text-align:center;margin-top:4px;}
+.speak-result-btns{display:flex;gap:10px;margin-top:14px;}
+.speak-result-btns .speak-correct{flex:1;}
+.speak-result-btns .speak-again{flex:1;}
+.speak-py-large{font-size:1.05rem;color:var(--ink-soft);margin:4px 0 10px;line-height:1.7;}
+.pitch-legend{display:flex;gap:14px;justify-content:center;font-size:.74rem;color:var(--ink-faint);margin-top:4px;margin-bottom:2px;}
+.pitch-legend span{display:flex;align-items:center;gap:4px;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pop{0%{transform:scale(.9);opacity:0;}60%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
+.fade-in{animation:fadeSlide .28s ease;}
+.pop-in{animation:pop .28s ease;}
+@media(max-width:480px){.home-title{font-size:1.8rem;}.speak-zh{font-size:1.6rem;}.options-grid{grid-template-columns:1fr 1fr;}.pos-seg{font-size:1.1rem;}.multi-sentence{font-size:1.05rem;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const LESSONS = [
+// ─────────────────────────────────────────────
+// LESSON 1 – 是 / 有 / 也
+// ─────────────────────────────────────────────
+{id:1,title:'Being, Having & Also',subtitle:'Core Sentence Structures',
+ grammar:[
+  {zh:'是',py:'shì',meaning:'to be',pattern:'Subject + 是 + Noun/Identity',
+   explanation:'是 (shì) links a subject to their identity. Note: adjective predicates do NOT use 是 in Chinese.',
+   examples:[{zh:'我是学生。',py:'Wǒ shì xuésheng.',en:'I am a student.'},{zh:'她是医生。',py:'Tā shì yīshēng.',en:'She is a doctor.'}]},
+  {zh:'有',py:'yǒu',meaning:'to have / there is',pattern:'Subject + 有 + Object',
+   explanation:'有 expresses possession or existence. Always negated with 没, never with 不.',
+   examples:[{zh:'我有一本书。',py:'Wǒ yǒu yī běn shū.',en:'I have a book.'},{zh:'他有一只猫。',py:'Tā yǒu yī zhī māo.',en:'He has a cat.'}]},
+  {zh:'也',py:'yě',meaning:'also / too',pattern:'Subject + 也 + Verb/Adjective',
+   explanation:'也 (yě) means "also." It always comes BEFORE the verb or adjective — never at the end of a sentence.',
+   examples:[{zh:'我也是学生。',py:'Wǒ yě shì xuésheng.',en:'I am also a student.'},{zh:'她也有一只猫。',py:'Tā yě yǒu yī zhī māo.',en:'She also has a cat.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我是学生。',py:'Wǒ shì xuésheng.',en:'I am a student.'},
+  {t:'speak',zh:'她是医生。',py:'Tā shì yīshēng.',en:'She is a doctor.'},
+  // POS: where does 是 go?
+  {t:'pos',word:'是',wordPy:'shì',segs:['我','学生。'],ans:1,en:'I am a student.'},
+  {t:'pos',word:'是',wordPy:'shì',segs:['他','老师。'],ans:1,en:'He is a teacher.'},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'是',p:'shì'},{w:'学生',p:'xuésheng'}],en:'I am a student.'},
+  {t:'tr',zh:'她是我的朋友。',py:'Tā shì wǒ de péngyou.',ans:'She is my friend.',opts:['She is my friend.','She has a friend.','He is my friend.','She also is a friend.']},
+  {t:'tr',zh:'你是医生吗？',py:'Nǐ shì yīshēng ma?',ans:'Are you a doctor?',opts:['Are you a teacher?','Are you a doctor?','Do you have a doctor?','You are a doctor.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'我有一本书。',py:'Wǒ yǒu yī běn shū.',en:'I have a book.'},
+  {t:'speak',zh:'她有一只狗。',py:'Tā yǒu yī zhī gǒu.',en:'She has a dog.'},
+  {t:'pos',word:'有',wordPy:'yǒu',segs:['他','一只猫。'],ans:1,en:'He has a cat.'},
+  {t:'pos',word:'有',wordPy:'yǒu',segs:['我','两个朋友。'],ans:1,en:'I have two friends.'},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'有',p:'yǒu'},{w:'一本',p:'yī běn'},{w:'书',p:'shū'}],en:'I have a book.'},
+  {t:'fill',sent:'他___猫，她___书。',py:'Tā ___ māo, tā ___ shū.',ans:'有',opts:['有','是','也','不'],en:'He has a cat; she has a book.'},
+  {t:'tr',zh:'你有手机吗？',py:'Nǐ yǒu shǒujī ma?',ans:'Do you have a phone?',opts:['Do you want a phone?','Do you have a phone?','Is this your phone?','You have a phone.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'我也是学生。',py:'Wǒ yě shì xuésheng.',en:'I am also a student.'},
+  {t:'speak',zh:'他也有书。',py:'Tā yě yǒu shū.',en:'He also has books.'},
+  // POS: where does 也 go? Key learning: BEFORE the verb
+  {t:'pos',word:'也',wordPy:'yě',segs:['我','是','学生。'],ans:1,en:'I am also a student. (也 comes before 是)'},
+  {t:'pos',word:'也',wordPy:'yě',segs:['她','有','一只猫。'],ans:1,en:'She also has a cat.'},
+  // MULTI: 也 position + decoy
+  {t:'multi',parts:['我',{id:'A'},'是学生，她',{id:'B'},'是学生。'],bank:['也','不','—'],answers:{A:'—',B:'也'},en:'I am a student; she is also a student.'},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'也',p:'yě'},{w:'是',p:'shì'},{w:'老师',p:'lǎoshī'}],en:'He is also a teacher.'},
+  {t:'fill',sent:'我不是老师，___是学生。',py:'Wǒ bú shì lǎoshī, ___ shì xuésheng.',ans:'也',opts:['也','不','都','很'],en:'I am not a teacher; I am also a student.'},
+  {t:'tr',zh:'她也是医生。',py:'Tā yě shì yīshēng.',ans:'She is also a doctor.',opts:['She is a doctor.','She is also a doctor.','She also has a doctor.','He is also a doctor.']},
+  {t:'tr',zh:'他也有一只狗。',py:'Tā yě yǒu yī zhī gǒu.',ans:'He also has a dog.',opts:['He has a dog.','He also wants a dog.','She also has a dog.','He also has a cat.']},
+  {t:'speak',zh:'你是我的朋友。',py:'Nǐ shì wǒ de péngyou.',en:'You are my friend.'},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'也',p:'yě'},{w:'是',p:'shì'},{w:'我的',p:'wǒ de'},{w:'朋友',p:'péngyou'}],en:'You are also my friend.'},
+  {t:'tr',zh:'我有书，他也有书。',py:'Wǒ yǒu shū, tā yě yǒu shū.',ans:'I have books; he also has books.',opts:['I have books; he also has books.','I have books; he has books.','He has books; I also have books.','I also have books; he has books.']},
+]},
+// ─────────────────────────────────────────────
+// LESSON 2 – 不 / 没(有) / 吗
+// ─────────────────────────────────────────────
+{id:2,title:'Negation & Questions',subtitle:'不, 没 and 吗',
+ grammar:[
+  {zh:'不',py:'bù',meaning:'not (present/future/habitual)',pattern:'Subject + 不 + Verb/Adjective',
+   explanation:'不 negates verbs and adjectives in the present or future. Its tone shifts to bú before 4th-tone syllables.',
+   examples:[{zh:'我不是学生。',py:'Wǒ bú shì xuésheng.',en:'I am not a student.'},{zh:'她不喜欢咖啡。',py:'Tā bù xǐhuān kāfēi.',en:"She doesn't like coffee."}]},
+  {zh:'没(有)',py:'méi(yǒu)',meaning:'not have / did not (past)',pattern:'Subject + 没有 + Noun  ·  Subject + 没 + Verb',
+   explanation:'没有 negates 有. 没 negates other verbs in the past. Never use 不 to negate 有.',
+   examples:[{zh:'我没有书。',py:'Wǒ méiyǒu shū.',en:"I don't have a book."},{zh:'他没吃早饭。',py:'Tā méi chī zǎofàn.',en:"He didn't eat breakfast."}]},
+  {zh:'吗',py:'ma',meaning:'yes/no question particle',pattern:'Statement + 吗？',
+   explanation:'Adding 吗 to the end of any statement turns it into a yes/no question. No word-order change needed.',
+   examples:[{zh:'你是学生吗？',py:'Nǐ shì xuésheng ma?',en:'Are you a student?'},{zh:'她有猫吗？',py:'Tā yǒu māo ma?',en:'Does she have a cat?'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我不是学生。',py:'Wǒ bú shì xuésheng.',en:'I am not a student.'},
+  {t:'speak',zh:'她不喝茶。',py:'Tā bù hē chá.',en:"She doesn't drink tea."},
+  // POS: where does 不 go? Before the verb
+  {t:'pos',word:'不',wordPy:'bù',segs:['我','是','老师。'],ans:1,en:'I am not a teacher.'},
+  {t:'pos',word:'不',wordPy:'bù',segs:['他','喜欢','苹果。'],ans:1,en:"He doesn't like apples."},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'不',p:'bù'},{w:'是',p:'shì'},{w:'医生',p:'yīshēng'}],en:'I am not a doctor.'},
+  {t:'tr',zh:'我不去学校。',py:'Wǒ bù qù xuéxiào.',ans:"I'm not going to school.",opts:['I go to school.',"I'm not going to school.",'I went to school.','I have no school.']},
+  {t:'tr',zh:'他不忙。',py:'Tā bù máng.',ans:'He is not busy.',opts:['He is busy.','He is not busy.','He is not tired.','He works.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'我没有书。',py:'Wǒ méiyǒu shū.',en:"I don't have a book."},
+  {t:'speak',zh:'他没吃早饭。',py:'Tā méi chī zǎofàn.',en:"He didn't eat breakfast."},
+  {t:'pos',word:'没',wordPy:'méi',segs:['我','有','猫。'],ans:1,en:"I don't have a cat."},
+  {t:'pos',word:'没',wordPy:'méi',segs:['她','去','图书馆。'],ans:1,en:"She didn't go to the library."},
+  // MULTI: 没有 + 吗 – tests knowing 有 follows 没, and 吗 goes at end
+  {t:'multi',parts:['她没',{id:'A'},'时间',{id:'B'}],bank:['有','了','吗','—'],answers:{A:'有',B:'吗'},en:"Does she not have time? → 她没有时间吗？"},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'没有',p:'méiyǒu'},{w:'时间',p:'shíjiān'}],en:"I don't have time."},
+  {t:'fill',sent:'你没有书，他___有书。',py:'Nǐ méiyǒu shū, tā ___ yǒu shū.',ans:'也',opts:['也','没','不','都'],en:'You have no book; he also has no book.'},
+  {t:'tr',zh:'她没喝水。',py:'Tā méi hē shuǐ.',ans:"She didn't drink water.",opts:["She doesn't drink water.","She didn't drink water.","She didn't have water.","She didn't eat."]},
+  {t:'intro',g:2},
+  {t:'speak',zh:'你是学生吗？',py:'Nǐ shì xuésheng ma?',en:'Are you a student?'},
+  {t:'speak',zh:'她有猫吗？',py:'Tā yǒu māo ma?',en:'Does she have a cat?'},
+  {t:'pos',word:'吗',wordPy:'ma',segs:['你','喝','咖啡'],ans:3,en:'Do you drink coffee? (吗 goes at the end)'},
+  {t:'pos',word:'吗',wordPy:'ma',segs:['他','是','老师'],ans:3,en:'Is he a teacher? (吗 goes at sentence end)'},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'有',p:'yǒu'},{w:'书',p:'shū'},{w:'吗',p:'ma'}],en:'Do you have books?'},
+  {t:'fill',sent:'你喝茶___？他也喝茶___？',py:'Nǐ hē chá ___? Tā yě hē chá ___?',ans:'吗',opts:['吗','呢','了','吧'],en:'Do you drink tea? Does he also drink tea?'},
+  {t:'tr',zh:'你有时间吗？',py:'Nǐ yǒu shíjiān ma?',ans:'Do you have time?',opts:['Do you want time?','Are you on time?','Do you have time?','Did you have time?']},
+  // Review L1
+  {t:'multi',parts:['我',{id:'A'},'是学生，我',{id:'B'},'有书。'],bank:['不','也','—'],answers:{A:'不',B:'—'},en:"I am NOT a student. I have a book. (不 negates; 也 would be wrong here)"},
+  {t:'speak',zh:'他也没有时间。',py:'Tā yě méiyǒu shíjiān.',en:"He also doesn't have time."},
+  {t:'tr',zh:'她没有猫，也没有狗。',py:'Tā méiyǒu māo, yě méiyǒu gǒu.',ans:"She doesn't have a cat or a dog.",opts:["She doesn't have a cat or a dog.",'She has no cat and no money.','She also has no cat.','She has no cat, she has a dog.']},
+]},
+// ─────────────────────────────────────────────
+// LESSON 3 – 很 / 都 / 呢
+// ─────────────────────────────────────────────
+{id:3,title:'Degree, Scope & "What About"',subtitle:'很, 都 and 呢',
+ grammar:[
+  {zh:'很',py:'hěn',meaning:'very (degree adverb)',pattern:'Subject + 很 + Adjective',
+   explanation:'Adjective predicates usually need a degree word like 很. Without it, the sentence sounds like a comparison. Here 很 can be mild or unstressed.',
+   examples:[{zh:'她很漂亮。',py:'Tā hěn piàoliang.',en:'She is (very) pretty.'},{zh:'今天很热。',py:'Jīntiān hěn rè.',en:'Today is (very) hot.'}]},
+  {zh:'都',py:'dōu',meaning:'all / both',pattern:'Subject(s) + 都 + Verb/Adjective',
+   explanation:'都 means "all" or "both." It always comes BEFORE the verb/adjective and AFTER the subject. It refers back to a plural or listed subject.',
+   examples:[{zh:'我们都是学生。',py:'Wǒmen dōu shì xuésheng.',en:'We are all students.'},{zh:'他们都很忙。',py:'Tāmen dōu hěn máng.',en:'They are all very busy.'}]},
+  {zh:'呢',py:'ne',meaning:'"What about…?" / continuation',pattern:'[Topic] + 呢？',
+   explanation:'呢 at the end of a short phrase asks "what about…?" or softly continues a conversation topic.',
+   examples:[{zh:'我很好，你呢？',py:'Wǒ hěn hǎo, nǐ ne?',en:"I'm well, what about you?"},{zh:'他呢？',py:'Tā ne?',en:'What about him?'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'她很漂亮。',py:'Tā hěn piàoliang.',en:'She is very pretty.'},
+  {t:'speak',zh:'今天很冷。',py:'Jīntiān hěn lěng.',en:'Today is very cold.'},
+  {t:'pos',word:'很',wordPy:'hěn',segs:['他','高兴。'],ans:1,en:'He is (very) happy. (很 goes before the adjective)'},
+  {t:'pos',word:'很',wordPy:'hěn',segs:['这个苹果','甜。'],ans:1,en:'This apple is very sweet.'},
+  {t:'wo',words:[{w:'今天',p:'jīntiān'},{w:'很',p:'hěn'},{w:'热',p:'rè'}],en:'Today is very hot.'},
+  {t:'tr',zh:'他很累。',py:'Tā hěn lèi.',ans:'He is very tired.',opts:['He is very busy.','He is very tired.','He is very happy.','He is not tired.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'我们都是学生。',py:'Wǒmen dōu shì xuésheng.',en:'We are all students.'},
+  {t:'speak',zh:'他们都很忙。',py:'Tāmen dōu hěn máng.',en:'They are all very busy.'},
+  {t:'pos',word:'都',wordPy:'dōu',segs:['我们','喜欢','音乐。'],ans:1,en:'We all like music. (都 before the verb)'},
+  {t:'pos',word:'都',wordPy:'dōu',segs:['他们','是','老师。'],ans:1,en:'They are all teachers.'},
+  // MULTI: 都 + 很 — tests knowing both come before adj/verb, and that 都 precedes 很
+  {t:'multi',parts:['我们',{id:'A'},'是学生，',{id:'B'},'很高兴。'],bank:['都','很','—'],answers:{A:'都',B:'—'},en:'We are all students. (Very) happy. — tests: 都 before 是; no extra word before 高兴 here'},
+  {t:'wo',words:[{w:'我们',p:'wǒmen'},{w:'都',p:'dōu'},{w:'很',p:'hěn'},{w:'高兴',p:'gāoxìng'}],en:'We are all very happy.'},
+  {t:'fill',sent:'苹果和香蕉___很好吃。',py:'Píngguǒ hé xiāngjiāo ___ hěn hǎochī.',ans:'都',opts:['都','也','很','不'],en:'Both apples and bananas are delicious.'},
+  {t:'tr',zh:'我们都不喝咖啡。',py:'Wǒmen dōu bù hē kāfēi.',ans:'None of us drink coffee.',opts:['None of us drink coffee.','We all drink coffee.',"We all don't have coffee.",'We are all not here.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'我很好，你呢？',py:'Wǒ hěn hǎo, nǐ ne?',en:"I'm well, what about you?"},
+  {t:'speak',zh:'他不去，你呢？',py:'Tā bù qù, nǐ ne?',en:"He's not going; what about you?"},
+  {t:'pos',word:'呢',wordPy:'ne',segs:['我喜欢咖啡，你'],ans:1,en:'I like coffee; what about you? (呢 at sentence end)'},
+  {t:'pos',word:'呢',wordPy:'ne',segs:['他是老师，你'],ans:1,en:"He's a teacher; what about you?"},
+  {t:'multi',parts:['我很好，',{id:'A'},'你',{id:'B'},'？'],bank:['呢','吗','—'],answers:{A:'—',B:'呢'},en:"I'm well; what about you? → 我很好，你呢？"},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'呢',p:'ne'}],en:'What about him?'},
+  {t:'fill',sent:'我有时间，她___？',py:'Wǒ yǒu shíjiān, tā ___?',ans:'呢',opts:['呢','吗','也','都'],en:"I have time; what about her?"},
+  {t:'tr',zh:'我们都喝茶，你呢？',py:'Wǒmen dōu hē chá, nǐ ne?',ans:'We all drink tea; what about you?',opts:['We all drink tea; what about you?','We all drink tea; do you?','I drink tea; what about you?','We all drink tea; he does not.']},
+  // Review L1+L2
+  {t:'speak',zh:'他们都没有时间。',py:'Tāmen dōu méiyǒu shíjiān.',en:'They all have no time.'},
+  {t:'tr',zh:'我不忙，她也不忙。',py:'Wǒ bù máng, tā yě bù máng.',ans:"I'm not busy, and she's not busy either.",opts:["I'm not busy, and she's not busy either.",'I\'m busy, she\'s also busy.',"I'm not busy; what about her?","I'm not busy; she is busy."]},
+]},
+// ─────────────────────────────────────────────
+// LESSON 4 – 在 / 想 / 可以
+// ─────────────────────────────────────────────
+{id:4,title:'Location & Basic Modals',subtitle:'在, 想 and 可以',
+ grammar:[
+  {zh:'在',py:'zài',meaning:'at/in (location) · doing at a place',pattern:'Subject + 在 + Place  ·  Subject + 在 + Place + Verb',
+   explanation:'在 marks location. Before a verb it shows WHERE an action occurs: 他在家吃饭 = he eats at home.',
+   examples:[{zh:'我在学校。',py:'Wǒ zài xuéxiào.',en:'I am at school.'},{zh:'他在图书馆学习。',py:'Tā zài túshūguǎn xuéxí.',en:'He studies in the library.'}]},
+  {zh:'想',py:'xiǎng',meaning:'want to / would like to',pattern:'Subject + 想 + Verb',
+   explanation:'想 expresses desire or intention. Comes before the main verb. 不想 = don\'t want to.',
+   examples:[{zh:'我想喝茶。',py:'Wǒ xiǎng hē chá.',en:'I want to drink tea.'},{zh:'她想去北京。',py:'Tā xiǎng qù Běijīng.',en:'She wants to go to Beijing.'}]},
+  {zh:'可以',py:'kěyǐ',meaning:'can / may (permission)',pattern:'Subject + 可以 + Verb',
+   explanation:'可以 expresses permission or possibility. 不可以 = may not / cannot (permission denied).',
+   examples:[{zh:'你可以进来。',py:'Nǐ kěyǐ jìnlái.',en:'You may come in.'},{zh:'这里可以拍照。',py:'Zhèlǐ kěyǐ pāizhào.',en:'You can take photos here.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我在学校。',py:'Wǒ zài xuéxiào.',en:'I am at school.'},
+  {t:'speak',zh:'他在图书馆学习。',py:'Tā zài túshūguǎn xuéxí.',en:'He studies in the library.'},
+  {t:'pos',word:'在',wordPy:'zài',segs:['她','医院','工作。'],ans:1,en:'She works at the hospital. (在 before place)'},
+  {t:'pos',word:'在',wordPy:'zài',segs:['我们','家','吃饭。'],ans:1,en:'We eat at home.'},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'在',p:'zài'},{w:'家',p:'jiā'},{w:'休息',p:'xiūxi'}],en:'He is resting at home.'},
+  {t:'tr',zh:'妈妈在厨房做饭。',py:'Māma zài chúfáng zuòfàn.',ans:'Mom is cooking in the kitchen.',opts:['Mom is cooking in the kitchen.','Mom is in the kitchen.','Mom cooks at home.','Mom wants to cook.']},
+  {t:'tr',zh:'你在哪里？',py:'Nǐ zài nǎlǐ?',ans:'Where are you?',opts:['Where are you?','Are you there?','Where do you want to go?','What are you doing?']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'我想喝茶。',py:'Wǒ xiǎng hē chá.',en:'I want to drink tea.'},
+  {t:'speak',zh:'她想去北京。',py:'Tā xiǎng qù Běijīng.',en:'She wants to go to Beijing.'},
+  {t:'pos',word:'想',wordPy:'xiǎng',segs:['我','吃','米饭。'],ans:1,en:'I want to eat rice. (想 before the verb)'},
+  {t:'pos',word:'想',wordPy:'xiǎng',segs:['他','学','中文。'],ans:1,en:'He wants to study Chinese.'},
+  {t:'multi',parts:['我',{id:'A'},'在家',{id:'B'},'休息。'],bank:['想','不','—'],answers:{A:'想',B:'—'},en:'I want to rest at home. → 我想在家休息。'},
+  {t:'wo',words:[{w:'她',p:'tā'},{w:'不',p:'bù'},{w:'想',p:'xiǎng'},{w:'去',p:'qù'}],en:"She doesn't want to go."},
+  {t:'tr',zh:'你想喝什么？',py:'Nǐ xiǎng hē shénme?',ans:'What do you want to drink?',opts:['What do you want to drink?','Do you want to drink?','What are you drinking?','What do you have to drink?']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'你可以进来。',py:'Nǐ kěyǐ jìnlái.',en:'You may come in.'},
+  {t:'speak',zh:'这里可以拍照吗？',py:'Zhèlǐ kěyǐ pāizhào ma?',en:'Can we take photos here?'},
+  {t:'pos',word:'可以',wordPy:'kěyǐ',segs:['你','坐下。'],ans:1,en:'You may sit down.'},
+  {t:'pos',word:'可以',wordPy:'kěyǐ',segs:['我','用你的手机','吗？'],ans:1,en:'May I use your phone?'},
+  {t:'multi',parts:['这里',{id:'A'},'吸烟，但是',{id:'B'},'拍照。'],bank:['可以','不可以','—'],answers:{A:'不可以',B:'可以'},en:'You may not smoke here, but you can take photos.'},
+  {t:'wo',words:[{w:'你们',p:'nǐmen'},{w:'都',p:'dōu'},{w:'可以',p:'kěyǐ'},{w:'进来',p:'jìnlái'}],en:'You all may come in.'},
+  {t:'tr',zh:'我可以帮你吗？',py:'Wǒ kěyǐ bāng nǐ ma?',ans:'Can I help you?',opts:['Can I help you?','I want to help you.','Can you help me?','I will help you.']},
+  {t:'fill',sent:'你___多喝水，这___你好。',py:'Nǐ ___ duō hē shuǐ, zhè ___ nǐ hǎo.',ans:'应该',opts:['想','可以','应该','在'],en:'You should drink more water; it is good for you.'},
+  {t:'speak',zh:'我在家，你可以来吗？',py:'Wǒ zài jiā, nǐ kěyǐ lái ma?',en:"I'm at home; can you come?"},
+  {t:'tr',zh:'她想在北京学中文。',py:'Tā xiǎng zài Běijīng xué Zhōngwén.',ans:'She wants to study Chinese in Beijing.',opts:['She wants to study Chinese in Beijing.','She studies Chinese in Beijing.','She can study Chinese in Beijing.','She wants to go to Beijing.']},
+]},
+// ─────────────────────────────────────────────
+// LESSON 5 – 会 / 能 / 要
+// ─────────────────────────────────────────────
+{id:5,title:'Ability & Intention',subtitle:'会, 能 and 要',
+ grammar:[
+  {zh:'会',py:'huì',meaning:'can (learned skill / will)',pattern:'Subject + 会 + Verb',
+   explanation:'会 expresses a learned ability — something you know how to do. Also used for future probability ("will happen").',
+   examples:[{zh:'我会说中文。',py:'Wǒ huì shuō Zhōngwén.',en:'I can speak Chinese.'},{zh:'她会游泳。',py:'Tā huì yóuyǒng.',en:'She can swim.'}]},
+  {zh:'能',py:'néng',meaning:'can (physical ability / circumstance)',pattern:'Subject + 能 + Verb',
+   explanation:'能 expresses physical capability or ability based on circumstances. "I\'m able to (given the situation)."',
+   examples:[{zh:'你能吃辣的吗？',py:'Nǐ néng chī là de ma?',en:'Can you eat spicy food?'},{zh:'我现在不能说话。',py:'Wǒ xiànzài bù néng shuōhuà.',en:"I can't speak right now."}]},
+  {zh:'要',py:'yào',meaning:'want / will / need to',pattern:'Subject + 要 + Verb/Noun',
+   explanation:'要 has multiple uses: wanting something, intending to do something, or necessity. Context makes meaning clear.',
+   examples:[{zh:'我要一杯茶。',py:'Wǒ yào yī bēi chá.',en:'I want a cup of tea.'},{zh:'你要多休息。',py:'Nǐ yào duō xiūxi.',en:'You need to rest more.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我会说中文。',py:'Wǒ huì shuō Zhōngwén.',en:'I can speak Chinese.'},
+  {t:'speak',zh:'她不会开车。',py:'Tā bú huì kāichē.',en:"She can't drive."},
+  {t:'pos',word:'会',wordPy:'huì',segs:['他','唱歌。'],ans:1,en:'He can sing. (会 before the verb)'},
+  {t:'pos',word:'会',wordPy:'huì',segs:['你','说英语','吗？'],ans:1,en:'Can you speak English?'},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'会',p:'huì'},{w:'游泳',p:'yóuyǒng'},{w:'也',p:'yě'},{w:'会',p:'huì'},{w:'跑步',p:'pǎobù'}],en:'I can swim and also run.'},
+  {t:'tr',zh:'你会做中国菜吗？',py:'Nǐ huì zuò Zhōngguó cài ma?',ans:'Can you cook Chinese food?',opts:['Can you cook Chinese food?','Do you want to cook Chinese food?','Can you eat Chinese food?','Do you like Chinese food?']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'你能吃辣的吗？',py:'Nǐ néng chī là de ma?',en:'Can you eat spicy food?'},
+  {t:'speak',zh:'我现在不能说话。',py:'Wǒ xiànzài bù néng shuōhuà.',en:"I can't speak right now."},
+  {t:'pos',word:'能',wordPy:'néng',segs:['我','帮你。'],ans:1,en:'I can help you. (能 = circumstantial ability)'},
+  {t:'pos',word:'能',wordPy:'néng',segs:['他今天','来。'],ans:1,en:"He can't come today."},
+  // MULTI: 会 vs 能 — subtle difference in one sentence
+  {t:'multi',parts:['她',{id:'A'},'说中文，但是今天',{id:'B'},'说话。'],bank:['会','不能','不会'],answers:{A:'会',B:'不能'},en:"She can speak Chinese (skill), but can't speak today (circumstance)."},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'能',p:'néng'},{w:'帮我',p:'bāng wǒ'},{w:'吗',p:'ma'}],en:'Can you help me?'},
+  {t:'tr',zh:'你能说慢一点吗？',py:'Nǐ néng shuō màn yīdiǎn ma?',ans:'Can you speak a little slower?',opts:['Can you speak a little slower?','Can you speak louder?','Do you speak slowly?','Can you speak Chinese?']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'我要一杯茶。',py:'Wǒ yào yī bēi chá.',en:"I'd like a cup of tea."},
+  {t:'speak',zh:'你要多休息。',py:'Nǐ yào duō xiūxi.',en:'You need to rest more.'},
+  {t:'pos',word:'要',wordPy:'yào',segs:['我','买','两本书。'],ans:1,en:'I want to buy two books.'},
+  {t:'pos',word:'要',wordPy:'yào',segs:['你','注意','身体。'],ans:1,en:'You need to take care of your health.'},
+  {t:'fill',sent:'你___喝水，也___吃饭。',py:'Nǐ ___ hē shuǐ, yě ___ chīfàn.',ans:'要',opts:['要','想','能','可以'],en:'You need to drink water and also eat.'},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'不',p:'bù'},{w:'要',p:'yào'},{w:'吃',p:'chī'},{w:'米饭',p:'mǐfàn'}],en:"He doesn't want to eat rice."},
+  {t:'tr',zh:'我要三杯咖啡。',py:'Wǒ yào sān bēi kāfēi.',ans:'I want three cups of coffee.',opts:['I want three cups of coffee.','I need three cups.','I have three cups of coffee.','I\'d like one cup of coffee.']},
+  {t:'speak',zh:'你能不能慢点说？',py:'Nǐ néng bu néng màn diǎn shuō?',en:'Can you speak slower?'},
+  {t:'tr',zh:'他要在家，不能来。',py:'Tā yào zài jiā, bù néng lái.',ans:"He needs to be home and can't come.",opts:["He needs to be home and can't come.",'He wants to be home.','He is home; he can come.','He will stay home.']},
+]},
+// ─────────────────────────────────────────────
+// LESSON 6 – 了 / 过 / 正在
+// ─────────────────────────────────────────────
+{id:6,title:'Aspect Markers',subtitle:'了, 过 and 正在',
+ grammar:[
+  {zh:'了',py:'le',meaning:'completion / changed situation',pattern:'Verb + 了 (done)  ·  Sentence + 了 (new state)',
+   explanation:'了 after a verb marks a completed action. At sentence end, it marks a new situation or changed state.',
+   examples:[{zh:'我吃了早饭。',py:'Wǒ chī le zǎofàn.',en:'I ate breakfast.'},{zh:'他来了。',py:'Tā lái le.',en:"He's here (he has come)."}]},
+  {zh:'过',py:'guò',meaning:'have ever (experience)',pattern:'Verb + 过',
+   explanation:'过 after a verb means "have ever done" — a past experience. Negated with 没(有): 我没吃过寿司.',
+   examples:[{zh:'我去过北京。',py:'Wǒ qù guò Běijīng.',en:'I have been to Beijing.'},{zh:'你吃过日本菜吗？',py:'Nǐ chī guò Rìběn cài ma?',en:'Have you ever eaten Japanese food?'}]},
+  {zh:'正在',py:'zhèngzài',meaning:'currently doing (progressive)',pattern:'正在 + Verb (+ 呢)',
+   explanation:'正在 before a verb marks an ongoing action happening right now. Often followed by 呢 at sentence end.',
+   examples:[{zh:'我正在吃饭。',py:'Wǒ zhèngzài chīfàn.',en:"I'm eating (right now)."},{zh:'她正在看书呢。',py:'Tā zhèngzài kàn shū ne.',en:"She's reading right now."}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我吃了早饭。',py:'Wǒ chī le zǎofàn.',en:'I ate breakfast.'},
+  {t:'speak',zh:'他买了一本书。',py:'Tā mǎi le yī běn shū.',en:'He bought a book.'},
+  {t:'pos',word:'了',wordPy:'le',segs:['她喝','咖啡。'],ans:1,en:'She drank coffee. (了 after verb = completion)'},
+  {t:'pos',word:'了',wordPy:'le',segs:['我做','作业。'],ans:1,en:'I did the homework.'},
+  // MULTI: Verb+了 vs Sentence+了
+  {t:'multi',parts:['他买',{id:'A'},'一本书，他来',{id:'B'}],bank:['了','过','—'],answers:{A:'了',B:'了'},en:'He bought a book. He is here. (两个了: one after verb, one at sentence end)'},
+  {t:'wo',words:[{w:'我',p:'wǒ'},{w:'买',p:'mǎi'},{w:'了',p:'le'},{w:'两本书',p:'liǎng běn shū'}],en:'I bought two books.'},
+  {t:'tr',zh:'雨停了。',py:'Yǔ tíng le.',ans:'The rain has stopped.',opts:['The rain has stopped.','It is raining.','The rain stopped yesterday.','It was raining.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'我去过北京。',py:'Wǒ qù guò Běijīng.',en:'I have been to Beijing.'},
+  {t:'speak',zh:'你吃过北京烤鸭吗？',py:'Nǐ chī guò Běijīng kǎoyā ma?',en:'Have you ever eaten Peking Duck?'},
+  {t:'pos',word:'过',wordPy:'guò',segs:['他看','那部电影。'],ans:1,en:'He has seen that movie. (过 directly after verb)'},
+  {t:'pos',word:'过',wordPy:'guò',segs:['我没吃','寿司。'],ans:1,en:"I've never eaten sushi. (没 + verb + 过)"},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'去',p:'qù'},{w:'过',p:'guò'},{w:'上海',p:'Shànghǎi'},{w:'吗',p:'ma'}],en:'Have you ever been to Shanghai?'},
+  {t:'fill',sent:'你见___她___？',py:'Nǐ jiàn ___ tā ___?',ans:'过',opts:['过','了','着','正在'],en:'Have you ever met her?'},
+  {t:'tr',zh:'我学过一点儿法语。',py:'Wǒ xué guò yīdiǎnr Fǎyǔ.',ans:'I have studied a little French.',opts:['I have studied a little French.','I studied French before.','I want to learn French.',"I've never studied French."]},
+  {t:'intro',g:2},
+  {t:'speak',zh:'我正在吃饭。',py:'Wǒ zhèngzài chīfàn.',en:"I'm eating right now."},
+  {t:'speak',zh:'她正在看书呢。',py:'Tā zhèngzài kàn shū ne.',en:"She's reading right now."},
+  {t:'pos',word:'正在',wordPy:'zhèngzài',segs:['他们','开会。'],ans:1,en:'They are having a meeting. (正在 before verb)'},
+  {t:'pos',word:'正在',wordPy:'zhèngzài',segs:['我','做饭，等一下。'],ans:1,en:"I'm cooking; just a moment."},
+  // MULTI: 正在…呢
+  {t:'multi',parts:['她',{id:'A'},'打电话',{id:'B'}],bank:['正在','呢','—'],answers:{A:'正在',B:'呢'},en:"She is on the phone right now. → 她正在打电话呢"},
+  {t:'wo',words:[{w:'我们',p:'wǒmen'},{w:'正在',p:'zhèngzài'},{w:'学习',p:'xuéxí'}],en:'We are studying right now.'},
+  {t:'tr',zh:'我们正在等你呢！',py:'Wǒmen zhèngzài děng nǐ ne!',ans:'We are waiting for you right now!',opts:['We are waiting for you right now!','We waited for you.','We will wait for you.','We are going to wait.']},
+  {t:'speak',zh:'他买了书，正在看。',py:'Tā mǎi le shū, zhèngzài kàn.',en:'He bought a book and is reading it now.'},
+  {t:'tr',zh:'我去过那里，但是很久以前了。',py:'Wǒ qù guò nàlǐ, dànshì hěn jiǔ yǐqián le.',ans:"I've been there, but it was a long time ago.",opts:["I've been there, but it was a long time ago.",'I went there a long time ago.','I have been there many times.',"I haven't been there in a long time."]},
+]},
+// ─────────────────────────────────────────────
+// LESSON 7 – 的 / 得 / 地
+// ─────────────────────────────────────────────
+{id:7,title:'The Three "De" Particles',subtitle:'的, 得 and 地',
+ grammar:[
+  {zh:'的',py:'de',meaning:'possessive / noun modifier',pattern:'Modifier + 的 + Noun',
+   explanation:'的 links modifiers to nouns. Possession (我的书 = my book) or description (漂亮的花 = beautiful flower).',
+   examples:[{zh:'这是我的书。',py:'Zhè shì wǒ de shū.',en:'This is my book.'},{zh:'漂亮的花',py:'piàoliang de huā',en:'beautiful flower'}]},
+  {zh:'得',py:'de',meaning:'result / degree complement',pattern:'Verb + 得 + Adjective',
+   explanation:'得 links a verb to a complement describing the result or quality of the action. 说得很好 = speaks well.',
+   examples:[{zh:'她说得很好。',py:'Tā shuō de hěn hǎo.',en:'She speaks (it) very well.'},{zh:'他跑得很快。',py:'Tā pǎo de hěn kuài.',en:'He runs very fast.'}]},
+  {zh:'地',py:'de',meaning:'adverb marker',pattern:'Adjective/Adverb + 地 + Verb',
+   explanation:'地 turns an adjective into an adverb that modifies the verb that follows it. 高兴地唱 = sing happily.',
+   examples:[{zh:'她高兴地唱歌。',py:'Tā gāoxìng de chànggē.',en:'She sings happily.'},{zh:'他认真地工作。',py:'Tā rènzhēn de gōngzuò.',en:'He works seriously.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'这是我的书。',py:'Zhè shì wǒ de shū.',en:'This is my book.'},
+  {t:'speak',zh:'她是我的好朋友。',py:'Tā shì wǒ de hǎo péngyou.',en:'She is my good friend.'},
+  {t:'pos',word:'的',wordPy:'de',segs:['这是他','手机。'],ans:1,en:'This is his phone. (的 after possessor)'},
+  {t:'pos',word:'的',wordPy:'de',segs:['我喜欢漂亮','花。'],ans:1,en:'I like beautiful flowers.'},
+  {t:'fill',sent:'这是谁___书？这是我___书。',py:'Zhè shì shéi ___ shū? Zhè shì wǒ ___ shū.',ans:'的',opts:['的','得','地','了'],en:"Whose book is this? It's my book."},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'有',p:'yǒu'},{w:'一只',p:'yī zhī'},{w:'漂亮',p:'piàoliang'},{w:'的',p:'de'},{w:'狗',p:'gǒu'}],en:'He has a beautiful dog.'},
+  {t:'tr',zh:'我们学校的老师都很好。',py:'Wǒmen xuéxiào de lǎoshī dōu hěn hǎo.',ans:'All the teachers at our school are very good.',opts:['All the teachers at our school are very good.',"Our school's students are all good.",'All our teachers have books.','The teachers at school like us.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'她说得很好。',py:'Tā shuō de hěn hǎo.',en:'She speaks very well.'},
+  {t:'speak',zh:'他写得很慢。',py:'Tā xiě de hěn màn.',en:'He writes very slowly.'},
+  {t:'pos',word:'得',wordPy:'de',segs:['你唱','真好听。'],ans:1,en:'You sing really beautifully. (得 after verb)'},
+  {t:'pos',word:'得',wordPy:'de',segs:['他跑','非常快。'],ans:1,en:'He runs extremely fast.'},
+  // MULTI: 的 vs 得 — common confusion
+  {t:'multi',parts:['她',{id:'A'},'朋友说',{id:'B'},'很好。'],bank:['的','得','地'],answers:{A:'的',B:'得'},en:"Her friend speaks very well. → 她的朋友说得很好。"},
+  {t:'wo',words:[{w:'她',p:'tā'},{w:'说',p:'shuō'},{w:'得',p:'de'},{w:'非常',p:'fēicháng'},{w:'流利',p:'liúlì'}],en:'She speaks extremely fluently.'},
+  {t:'tr',zh:'他睡得很晚。',py:'Tā shuì de hěn wǎn.',ans:'He goes to sleep very late.',opts:['He goes to sleep very late.','He sleeps very well.','He woke up very late.','He worked very late.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'她高兴地唱歌。',py:'Tā gāoxìng de chànggē.',en:'She sings happily.'},
+  {t:'speak',zh:'他认真地学习。',py:'Tā rènzhēn de xuéxí.',en:'He studies seriously.'},
+  {t:'pos',word:'地',wordPy:'de',segs:['他们快乐','玩。'],ans:1,en:'They play happily. (地 turns adj into adverb)'},
+  {t:'pos',word:'地',wordPy:'de',segs:['她慢慢','走。'],ans:1,en:'She walks slowly.'},
+  // MULTI: 的 / 得 / 地 — three-way distinction
+  {t:'multi',parts:['他认真',{id:'A'},'学习，学',{id:'B'},'很好，是好',{id:'C'},'学生。'],bank:['地','得','的'],answers:{A:'地',B:'得',C:'的'},en:'He studies seriously, does it well, and is a good student.'},
+  {t:'fill',sent:'请认真___回答问题。',py:'Qǐng rènzhēn ___ huídá wèntí.',ans:'地',opts:['地','的','得','了'],en:'Please answer the questions seriously.'},
+  {t:'tr',zh:'他快乐地工作，做得很好。',py:'Tā kuàilè de gōngzuò, zuò de hěn hǎo.',ans:'He works happily and does it very well.',opts:['He works happily and does it very well.','He works quickly and well.','His work makes him happy.','He does his work very happily.']},
+  {t:'speak',zh:'他认真地学习，说得很好。',py:'Tā rènzhēn de xuéxí, shuō de hěn hǎo.',en:'He studies seriously and speaks very well.'},
+]},
+// ─────────────────────────────────────────────
+// LESSON 8 – 比 / 最 / 跟...一样
+// ─────────────────────────────────────────────
+{id:8,title:'Making Comparisons',subtitle:'比, 最 and 跟...一样',
+ grammar:[
+  {zh:'比',py:'bǐ',meaning:'more…than (comparative)',pattern:'A + 比 + B + Adjective',
+   explanation:'比 compares two things: 我比你高 = I am taller than you. Do NOT add 更 right after 比.',
+   examples:[{zh:'我比你高。',py:'Wǒ bǐ nǐ gāo.',en:'I am taller than you.'},{zh:'苹果比香蕉贵。',py:'Píngguǒ bǐ xiāngjiāo guì.',en:'Apples are more expensive than bananas.'}]},
+  {zh:'最',py:'zuì',meaning:'most / -est (superlative)',pattern:'最 + Adjective / Verb',
+   explanation:'最 before an adjective makes it superlative: 最好 = best, 最喜欢 = like most.',
+   examples:[{zh:'她是最聪明的学生。',py:'Tā shì zuì cōngmíng de xuésheng.',en:'She is the most intelligent student.'},{zh:'我最喜欢吃面条。',py:'Wǒ zuì xǐhuān chī miàntiáo.',en:'I like eating noodles the most.'}]},
+  {zh:'跟...一样',py:'gēn...yīyàng',meaning:'as…as / the same as',pattern:'A + 跟 + B + 一样 (+ Adjective)',
+   explanation:'跟...一样 means "A is the same as B." Add an adjective: 他跟我一样高 = He is as tall as me.',
+   examples:[{zh:'他跟我一样高。',py:'Tā gēn wǒ yīyàng gāo.',en:'He is as tall as me.'},{zh:'这个跟那个一样贵。',py:'Zhège gēn nàge yīyàng guì.',en:'This one is as expensive as that one.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'我比你高。',py:'Wǒ bǐ nǐ gāo.',en:'I am taller than you.'},
+  {t:'speak',zh:'今天比昨天冷。',py:'Jīntiān bǐ zuótiān lěng.',en:'Today is colder than yesterday.'},
+  {t:'pos',word:'比',wordPy:'bǐ',segs:['苹果','香蕉','甜。'],ans:1,en:'Apples are sweeter than bananas. (A 比 B adj)'},
+  {t:'pos',word:'比',wordPy:'bǐ',segs:['他','我','忙。'],ans:1,en:'He is busier than me.'},
+  {t:'wo',words:[{w:'这个',p:'zhège'},{w:'比',p:'bǐ'},{w:'那个',p:'nàge'},{w:'贵',p:'guì'}],en:'This one is more expensive than that one.'},
+  {t:'tr',zh:'北京比上海大吗？',py:'Běijīng bǐ Shànghǎi dà ma?',ans:'Is Beijing bigger than Shanghai?',opts:['Is Beijing bigger than Shanghai?','Is Beijing as big as Shanghai?','Is Beijing the biggest?','Which is bigger?']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'她是最聪明的学生。',py:'Tā shì zuì cōngmíng de xuésheng.',en:'She is the most intelligent student.'},
+  {t:'speak',zh:'我最喜欢吃饺子。',py:'Wǒ zuì xǐhuān chī jiǎozi.',en:'I like eating dumplings the most.'},
+  {t:'pos',word:'最',wordPy:'zuì',segs:['今天是','冷的一天。'],ans:1,en:'Today is the coldest day. (最 before adj)'},
+  {t:'pos',word:'最',wordPy:'zuì',segs:['他','喜欢打篮球。'],ans:1,en:'He likes basketball the most.'},
+  {t:'multi',parts:['她比我',{id:'A'},'，也是班里',{id:'B'},'聪明的。'],bank:['高','最','比'],answers:{A:'高',B:'最'},en:'She is taller than me, and also the most intelligent in the class.'},
+  {t:'wo',words:[{w:'她',p:'tā'},{w:'是',p:'shì'},{w:'班里',p:'bān lǐ'},{w:'最',p:'zuì'},{w:'高',p:'gāo'},{w:'的',p:'de'}],en:'She is the tallest in the class.'},
+  {t:'tr',zh:'她唱得最好听。',py:'Tā chàng de zuì hǎotīng.',ans:'She sings the most beautifully.',opts:['She sings the most beautifully.','She sings very well.','She is the best at singing.','She likes singing the most.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'他跟我一样高。',py:'Tā gēn wǒ yīyàng gāo.',en:'He is as tall as me.'},
+  {t:'speak',zh:'这道菜跟那道一样贵。',py:'Zhè dào cài gēn nà dào yīyàng guì.',en:'This dish is as expensive as that one.'},
+  {t:'pos',word:'跟',wordPy:'gēn',segs:['她','我一样忙。'],ans:1,en:'She is as busy as me. (A 跟 B 一样)'},
+  {t:'pos',word:'一样',wordPy:'yīyàng',segs:['这个苹果跟那个','甜。'],ans:1,en:'This apple is as sweet as that one.'},
+  // MULTI: A 比 B adj  vs  A 跟 B 一样 adj  — key contrast
+  {t:'multi',parts:['他',{id:'A'},'我高，但是他',{id:'B'},'我',{id:'C'},'忙。'],bank:['比','跟','一样'],answers:{A:'比',B:'跟',C:'一样'},en:'He is taller than me, but he is as busy as me.'},
+  {t:'wo',words:[{w:'他',p:'tā'},{w:'跟',p:'gēn'},{w:'我',p:'wǒ'},{w:'一样',p:'yīyàng'},{w:'喜欢',p:'xǐhuān'},{w:'音乐',p:'yīnyuè'}],en:'He likes music just as much as I do.'},
+  {t:'fill',sent:'她___我高，也___我跑得快。',py:'Tā ___ wǒ gāo, yě ___ wǒ pǎo de kuài.',ans:'比',opts:['比','跟','最','很'],en:'She is taller than me and also runs faster than me.'},
+  {t:'tr',zh:'今年跟去年一样冷。',py:'Jīnnián gēn qùnián yīyàng lěng.',ans:'This year is as cold as last year.',opts:['This year is as cold as last year.','This year is colder than last year.','Last year was coldest.','This year is not as cold as last year.']},
+  {t:'speak',zh:'他是我们班最努力的学生。',py:'Tā shì wǒmen bān zuì nǔlì de xuésheng.',en:'He is the hardest-working student in our class.'},
+]},
+// ─────────────────────────────────────────────
+// LESSON 9 – 因为...所以 / 虽然...但是 / 如果...就
+// ─────────────────────────────────────────────
+{id:9,title:'Complex Sentences',subtitle:'因为...所以, 虽然...但是 and 如果...就',
+ grammar:[
+  {zh:'因为...所以',py:'yīnwèi...suǒyǐ',meaning:'because…therefore',pattern:'因为 + Reason, 所以 + Result',
+   explanation:'因为 introduces a reason, 所以 introduces the result. Either can be omitted in context, but not both.',
+   examples:[{zh:'因为下雨，所以我没去。',py:'Yīnwèi xià yǔ, suǒyǐ wǒ méi qù.',"en":"Because it rained, I didn't go."},{zh:'因为他很忙，所以不能来。',py:'Yīnwèi tā hěn máng, suǒyǐ bù néng lái.',en:"Because he is busy, he can't come."}]},
+  {zh:'虽然...但是',py:'suīrán...dànshì',meaning:'although…but',pattern:'虽然 + Concession, 但是 + Contrast',
+   explanation:'虽然 introduces a concession, 但是 the contrasting fact. Unlike English, Chinese keeps subjects in both clauses.',
+   examples:[{zh:'虽然很贵，但是很好吃。',py:'Suīrán hěn guì, dànshì hěn hǎochī.',en:"Although it's expensive, it's delicious."},{zh:'虽然他很累，但是没休息。',py:'Suīrán tā hěn lèi, dànshì méi xiūxi.',en:"Although he was tired, he didn't rest."}]},
+  {zh:'如果...就',py:'rúguǒ...jiù',meaning:'if…then',pattern:'如果 + Condition, 就 + Result',
+   explanation:'如果 sets up a condition; 就 introduces the result. 就 can stand alone when context is clear.',
+   examples:[{zh:'如果你来，我就很高兴。',py:'Rúguǒ nǐ lái, wǒ jiù hěn gāoxìng.',en:'If you come, I will be happy.'},{zh:'如果明天下雨，我就不去了。',py:'Rúguǒ míngtiān xià yǔ, wǒ jiù bù qù le.',en:"If it rains tomorrow, I won't go."}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'因为下雨，所以我没去。',py:'Yīnwèi xià yǔ, suǒyǐ wǒ méi qù.',en:"Because it rained, I didn't go."},
+  {t:'speak',zh:'因为她很忙，所以不能来。',py:'Yīnwèi tā hěn máng, suǒyǐ bù néng lái.',en:"Because she is busy, she can't come."},
+  // POS: 因为 goes at start of reason clause
+  {t:'pos',word:'因为',wordPy:'yīnwèi',segs:['他累了，所以他去睡觉了。'],ans:0,en:'Because he was tired, he went to sleep. (因为 at the very start)'},
+  // MULTI: 因为…所以 paired
+  {t:'multi',parts:[{id:'A'},'天气好，',{id:'B'},'我们去公园了。'],bank:['因为','所以','但是','—'],answers:{A:'因为',B:'所以'},en:'Because the weather was good, we went to the park.'},
+  {t:'multi',parts:['他',{id:'A'},'生病了，',{id:'B'},'他没来，',{id:'C'}],bank:['因为','所以','—'],answers:{A:'因为',B:'所以',C:'—'},en:"Because he got sick, he didn't come. (no extra word at end)"},
+  {t:'wo',words:[{w:'因为',p:'yīnwèi'},{w:'今天',p:'jīntiān'},{w:'下雨',p:'xià yǔ'},{w:'所以',p:'suǒyǐ'},{w:'我',p:'wǒ'},{w:'不去了',p:'bù qù le'}],en:"Because it's raining today, I'm not going."},
+  {t:'tr',zh:'因为他不认识路，所以迷路了。',py:'Yīnwèi tā bù rènshi lù, suǒyǐ mí lù le.',ans:"Because he didn't know the way, he got lost.",opts:["Because he didn't know the way, he got lost.",'He got lost so he asked for directions.',"Although he didn't know the way, he didn't get lost.",'If he doesn\'t know the way, he will get lost.']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'虽然很贵，但是很好吃。',py:'Suīrán hěn guì, dànshì hěn hǎochī.',en:"Although it's expensive, it's delicious."},
+  {t:'speak',zh:'虽然他很累，但是没休息。',py:'Suīrán tā hěn lèi, dànshì méi xiūxi.',en:"Although he was tired, he didn't rest."},
+  {t:'pos',word:'虽然',wordPy:'suīrán',segs:['很远，但是她还是去了。'],ans:0,en:'Although it was far, she still went. (虽然 starts the first clause)'},
+  {t:'multi',parts:[{id:'A'},'他不想来，',{id:'B'},'他还是来了。'],bank:['虽然','但是','因为'],answers:{A:'虽然',B:'但是'},en:"Although he didn't want to come, he still came."},
+  {t:'multi',parts:['天气',{id:'A'},'不好，',{id:'B'},'我们还是去了，',{id:'C'},'玩得很开心。'],bank:['虽然','但是','—'],answers:{A:'—',B:'但是',C:'—'},en:'The weather was not good, but we still went and had a great time.'},
+  {t:'wo',words:[{w:'虽然',p:'suīrán'},{w:'很忙',p:'hěn máng'},{w:'但是',p:'dànshì'},{w:'他',p:'tā'},{w:'每天',p:'měitiān'},{w:'锻炼',p:'duànliàn'}],en:'Although he is busy, he exercises every day.'},
+  {t:'tr',zh:'虽然贵，但是质量好。',py:'Suīrán guì, dànshì zhìliàng hǎo.',ans:"Although it's expensive, the quality is good.",opts:["Although it's expensive, the quality is good.","Because it's expensive, the quality is good.",'It\'s expensive but not good quality.','The quality is good so it\'s expensive.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'如果你来，我就很高兴。',py:'Rúguǒ nǐ lái, wǒ jiù hěn gāoxìng.',en:'If you come, I will be happy.'},
+  {t:'speak',zh:'如果明天下雨，我就不去了。',py:'Rúguǒ míngtiān xià yǔ, wǒ jiù bù qù le.',en:"If it rains tomorrow, I won't go."},
+  {t:'pos',word:'如果',wordPy:'rúguǒ',segs:['你有时间，就来我家吧。'],ans:0,en:'If you have time, come to my place. (如果 at start of condition)'},
+  {t:'multi',parts:[{id:'A'},'你有时间，你',{id:'B'},'可以来。'],bank:['如果','就','所以','—'],answers:{A:'如果',B:'就'},en:'If you have time, you can come.'},
+  {t:'multi',parts:[{id:'A'},'明天天气好，我们',{id:'B'},'去爬山，',{id:'C'},'下雨，我们',{id:'D'},'不去了。'],bank:['如果','就','如果','就'],answers:{A:'如果',B:'就',C:'如果',D:'就'},en:'If tomorrow is nice we\'ll hike; if it rains we won\'t go.'},
+  {t:'wo',words:[{w:'如果',p:'rúguǒ'},{w:'你',p:'nǐ'},{w:'帮我',p:'bāng wǒ'},{w:'我',p:'wǒ'},{w:'就',p:'jiù'},{w:'帮你',p:'bāng nǐ'}],en:"If you help me, I'll help you."},
+  {t:'tr',zh:'如果你想学，我就教你。',py:'Rúguǒ nǐ xiǎng xué, wǒ jiù jiāo nǐ.',ans:"If you want to learn, I'll teach you.",opts:["If you want to learn, I'll teach you.",'Although you want to learn, I can\'t teach you.',"Because you want to learn, I'll teach you.",'If you can learn, you can teach me.']},
+  {t:'speak',zh:'因为我喜欢，所以我每天练习。',py:'Yīnwèi wǒ xǐhuān, suǒyǐ wǒ měitiān liànxí.',en:'Because I like it, I practice every day.'},
+  {t:'tr',zh:'虽然很难，但是如果你努力，就能成功。',py:'Suīrán hěn nán, dànshì rúguǒ nǐ nǔlì, jiù néng chénggōng.',ans:"Although it's difficult, if you work hard you can succeed.",opts:["Although it's difficult, if you work hard you can succeed.",'It\'s difficult because you don\'t work hard.','If it\'s difficult, you should try harder.','Although it\'s difficult, you still succeeded.']},
+]},
+// ─────────────────────────────────────────────
+// LESSON 10 – 还是/或者, 一边...一边, 把
+// ─────────────────────────────────────────────
+{id:10,title:'Advanced Structures',subtitle:'还是/或者, 一边...一边 and 把',
+ grammar:[
+  {zh:'还是 / 或者',py:'háishi / huòzhě',meaning:'"or" (question vs. statement)',pattern:'A + 还是 + B？ (question)  ·  A + 或者 + B (statement)',
+   explanation:'还是 is for questions (A or B?). 或者 is for statements (either A or B). Mixing them is a common error.',
+   examples:[{zh:'你喝茶还是咖啡？',py:'Nǐ hē chá háishi kāfēi?',en:'Do you drink tea or coffee?'},{zh:'你可以坐地铁或者打车。',py:'Nǐ kěyǐ zuò dìtiě huòzhě dǎchē.',en:'You can take the subway or a taxi.'}]},
+  {zh:'一边...一边',py:'yībiān...yībiān',meaning:'doing X while doing Y',pattern:'一边 + Verb₁ + 一边 + Verb₂',
+   explanation:'一边...一边 describes two intentional actions happening simultaneously. Both verbs require a 一边.',
+   examples:[{zh:'他一边吃饭一边看手机。',py:'Tā yībiān chīfàn yībiān kàn shǒujī.',en:'He eats while looking at his phone.'},{zh:'她一边走路一边听音乐。',py:'Tā yībiān zǒulù yībiān tīng yīnyuè.',en:'She walks while listening to music.'}]},
+  {zh:'把',py:'bǎ',meaning:'disposal: what happened to the object',pattern:'Subject + 把 + Object + Verb + Complement',
+   explanation:'把 moves a specific object before the verb to emphasize what happens to it. The verb must have a complement or 了 after it.',
+   examples:[{zh:'我把书放在桌子上了。',py:'Wǒ bǎ shū fàng zài zhuōzi shàng le.',en:'I put the book on the table.'},{zh:'她把作业做完了。',py:'Tā bǎ zuòyè zuò wán le.',en:'She finished her homework.'}]}],
+ prompts:[
+  {t:'intro',g:0},
+  {t:'speak',zh:'你喝茶还是咖啡？',py:'Nǐ hē chá háishi kāfēi?',en:'Do you drink tea or coffee?'},
+  {t:'speak',zh:'你坐地铁还是打车？',py:'Nǐ zuò dìtiě háishi dǎchē?',en:'Do you take the subway or a taxi?'},
+  {t:'pos',word:'还是',wordPy:'háishi',segs:['你去北京','上海？'],ans:1,en:'Are you going to Beijing or Shanghai? (还是 in questions between the two options)'},
+  // MULTI: 还是 vs 或者 — question vs statement
+  {t:'multi',parts:['你喝茶',{id:'A'},'咖啡？你可以喝茶',{id:'B'},'咖啡。'],bank:['还是','或者','和'],answers:{A:'还是',B:'或者'},en:'Do you want tea or coffee? You can drink tea or coffee.'},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'吃',p:'chī'},{w:'米饭',p:'mǐfàn'},{w:'还是',p:'háishi'},{w:'面条',p:'miàntiáo'}],en:'Do you eat rice or noodles?'},
+  {t:'fill',sent:'你可以早点来___晚点来。',py:'Nǐ kěyǐ zǎo diǎn lái ___ wǎn diǎn lái.',ans:'或者',opts:['或者','还是','但是','和'],en:'You can come earlier or later.'},
+  {t:'tr',zh:'你想喝水还是果汁？',py:'Nǐ xiǎng hē shuǐ háishi guǒzhī?',ans:'Do you want water or juice?',opts:['Do you want water or juice?','You can have water or juice.','Do you like water and juice?','Water or juice?']},
+  {t:'intro',g:1},
+  {t:'speak',zh:'他一边吃饭一边看手机。',py:'Tā yībiān chīfàn yībiān kàn shǒujī.',en:'He eats while looking at his phone.'},
+  {t:'speak',zh:'她一边走路一边听音乐。',py:'Tā yībiān zǒulù yībiān tīng yīnyuè.',en:'She walks while listening to music.'},
+  {t:'pos',word:'一边',wordPy:'yībiān',segs:['他','唱歌一边跳舞。'],ans:1,en:'He sings while dancing. (FIRST 一边 goes here)'},
+  // MULTI: 一边...一边 — both required, no decoys
+  {t:'multi',parts:['我',{id:'A'},'学习',{id:'B'},'听音乐。'],bank:['一边','一边','也'],answers:{A:'一边',B:'一边'},en:'I study while listening to music. (需要两个一边!)'},
+  {t:'multi',parts:['她',{id:'A'},'做饭',{id:'B'},'打电话，她',{id:'C'},'很忙。'],bank:['一边','一边','真的'],answers:{A:'一边',B:'一边',C:'真的'},en:'She cooks while talking on the phone; she is really busy.'},
+  {t:'wo',words:[{w:'你',p:'nǐ'},{w:'不能',p:'bù néng'},{w:'一边',p:'yībiān'},{w:'开车',p:'kāichē'},{w:'一边',p:'yībiān'},{w:'发信息',p:'fā xìnxi'}],en:"You can't drive while sending messages."},
+  {t:'tr',zh:'他喜欢一边跑步一边听播客。',py:'Tā xǐhuān yībiān pǎobù yībiān tīng bōkè.',ans:'He likes to run while listening to podcasts.',opts:['He likes to run while listening to podcasts.','He runs and then listens to podcasts.','He likes running or listening to podcasts.','He listens to podcasts and runs.']},
+  {t:'intro',g:2},
+  {t:'speak',zh:'我把书放在桌子上了。',py:'Wǒ bǎ shū fàng zài zhuōzi shàng le.',en:'I put the book on the table.'},
+  {t:'speak',zh:'她把作业做完了。',py:'Tā bǎ zuòyè zuò wán le.',en:'She finished her homework.'},
+  {t:'pos',word:'把',wordPy:'bǎ',segs:['我','书放在桌子上了。'],ans:1,en:'I put the book on the table. (把 between subject and object)'},
+  {t:'pos',word:'把',wordPy:'bǎ',segs:['她','作业做完了。'],ans:1,en:'She finished her homework.'},
+  // MULTI: 把 structure requires verb + complement
+  {t:'multi',parts:['我',{id:'A'},'书',{id:'B'},'在桌子上',{id:'C'}],bank:['把','放','了','—'],answers:{A:'把',B:'放',C:'了'},en:'I put the book on the table → 我把书放在桌子上了'},
+  {t:'wo',words:[{w:'她',p:'tā'},{w:'把',p:'bǎ'},{w:'门',p:'mén'},{w:'关上',p:'guānshàng'},{w:'了',p:'le'}],en:'She closed the door.'},
+  {t:'fill',sent:'请___窗户打开。',py:'Qǐng ___ chuānghu dǎkāi.',ans:'把',opts:['把','让','被','给'],en:'Please open the window.'},
+  {t:'tr',zh:'他把我的书拿走了。',py:'Tā bǎ wǒ de shū ná zǒu le.',ans:'He took my book away.',opts:['He took my book away.','He put my book back.','He lost my book.','He gave me a book.']},
+  // Grand review
+  {t:'speak',zh:'如果你把作业做完了，就可以休息。',py:'Rúguǒ nǐ bǎ zuòyè zuò wán le, jiù kěyǐ xiūxi.',en:'If you finish your homework, you can rest.'},
+  {t:'multi',parts:['他',{id:'A'},'喝茶',{id:'B'},'把书',{id:'C'},'完了。'],bank:['一边','一边','看'],answers:{A:'一边',B:'一边',C:'看'},en:'He finished reading the book while drinking tea.'},
+  {t:'tr',zh:'因为他把作业做完了，所以可以出去玩了。',py:'Yīnwèi tā bǎ zuòyè zuò wán le, suǒyǐ kěyǐ chūqù wán le.',ans:'Because he finished his homework, he can go out and play.',opts:['Because he finished his homework, he can go out and play.',"Although he finished his homework, he can't go out.",'If he finishes his homework, he can play.','He went out to play, so his homework is done.']},
+]}
+]; // end LESSONS// ── TTS (Google Translate neural voice + browser fallback) ──────────
+let _audio = null;
+function speakChinese(text) {
+  if (!text) return;
+  try {
+    if (_audio) { _audio.pause(); _audio = null; }
+    const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(text);
+    _audio = new Audio(url);
+    _audio.play().catch(() => _browserSpeak(text));
+  } catch(e) { _browserSpeak(text); }
+}
+function _browserSpeak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN'; u.rate = 0.85;
+  window.speechSynthesis.speak(u);
+}
+
+
+// ── MIC / SPEECH GLOBALS ─────────────────────────────────────────────
+// These live outside S (non-serialisable — AudioContext, MediaStream, RAF)
+let MIC = { phase:'idle', transcript:'', pitchData:[], duration:0, error:'' };
+let _micStream=null, _micCtx=null, _micAnalyser=null;
+let _pitchRAF=null, _pitchHistory=[], _recordStart=0;
+let _micRecognizer=null, _pendingPy='';
+
+function _micSpeechOK(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+function _micAudioOK(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&(window.AudioContext||window.webkitAudioContext)); }
+
+// ── PINYIN PARSING ────────────────────────────────────────────────────
+function parsePinyinSyllables(py) {
+  const clean = py.replace(/[。，？！,.?!'"\r\n]/g,' ').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  const T1='āēīōūǖĀĒĪŌŪǕ', T2='áéíóúǘÁÉÍÓÚǗ', T3='ǎěǐǒǔǚǍĚǏǑǓǙ', T4='àèìòùǜÀÈÌÒÙǛ';
+  return words.map(w => {
+    let tone=0;
+    for(const c of w){
+      if(T1.includes(c)){tone=1;break;} if(T2.includes(c)){tone=2;break;}
+      if(T3.includes(c)){tone=3;break;} if(T4.includes(c)){tone=4;break;}
+    }
+    return {syllable:w, tone};
+  });
+}
+
+// ── AUTOCORRELATION PITCH DETECTION ──────────────────────────────────
+function detectPitch(buf, sampleRate) {
+  const N = buf.length, HALF = N >> 1;
+  let rms = 0;
+  for(let i=0;i<N;i++) rms += buf[i]*buf[i];
+  if(Math.sqrt(rms/N) < 0.007) return -1;          // silence
+
+  const minLag = Math.floor(sampleRate/620);        // ≈600 Hz ceiling
+  const maxLag = Math.floor(sampleRate/60);         // ≈60 Hz floor
+
+  // Normalised autocorrelation (NSDF-lite)
+  let bestLag=-1, bestVal=0;
+  for(let lag=minLag; lag<=Math.min(maxLag,HALF-1); lag++){
+    let num=0, den=0;
+    for(let i=0;i<HALF;i++){
+      num += buf[i]*buf[i+lag];
+      den += buf[i]*buf[i] + buf[i+lag]*buf[i+lag];
+    }
+    const r = den>0 ? 2*num/den : 0;
+    if(r>bestVal && r>0.45){ bestVal=r; bestLag=lag; }
+  }
+  return bestLag>0 ? sampleRate/bestLag : -1;
+}
+
+// ── PITCH CANVAS ──────────────────────────────────────────────────────
+function drawPitchCanvas(py, isFinal) {
+  const canvas = document.getElementById('pitch-canvas');
+  if(!canvas) return;
+  const W = canvas.width  = canvas.offsetWidth || 300;
+  const H = canvas.height = 130;
+  const ctx = canvas.getContext('2d');
+
+  const PAD={t:22,b:26,l:10,r:10};
+  const dW=W-PAD.l-PAD.r, dH=H-PAD.t-PAD.b;
+
+  // background
+  ctx.fillStyle='#FAF3F4'; ctx.fillRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle='rgba(0,0,0,0.055)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(f=>{
+    const y=PAD.t+f*dH;
+    ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
+  });
+
+  // Reference curves per syllable
+  const syls = parsePinyinSyllables(py);
+  const nS = Math.max(syls.length,1);
+  const sW = dW/nS;
+  const TONE_SHAPES={
+    1:[[.05,.14],[.95,.14]],
+    2:[[.05,.74],[.95,.10]],
+    3:[[.05,.40],[.32,.90],[.68,.78],[.95,.40]],
+    4:[[.05,.10],[.95,.82]],
+    0:[[.35,.56],[.65,.56]],
+  };
+  const TONE_LABELS=['n','1','2','3','4'];
+
+  syls.forEach((syl,i)=>{
+    const x1=PAD.l+i*sW, x2=x1+sW, xm=(x1+x2)/2;
+    // divider
+    if(i>0){ ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(x1,PAD.t); ctx.lineTo(x1,H-PAD.b); ctx.stroke(); ctx.setLineDash([]); }
+    // tone number label
+    ctx.fillStyle='rgba(202,138,4,.75)'; ctx.font='bold 9px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(TONE_LABELS[syl.tone]||'n', xm, PAD.t-6);
+    // reference curve
+    const shape=TONE_SHAPES[syl.tone]||TONE_SHAPES[0];
+    ctx.strokeStyle='rgba(202,138,4,.5)'; ctx.lineWidth=2.5; ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    shape.forEach(([tx,ty],j)=>{ const px=x1+tx*sW, py=PAD.t+ty*dH; j===0?ctx.moveTo(px,py):ctx.lineTo(px,py); });
+    ctx.stroke(); ctx.setLineDash([]);
+    // syllable label at bottom
+    ctx.fillStyle='rgba(107,91,98,.65)'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(syl.syllable, xm, H-7);
+  });
+
+  // User pitch curve
+  const pts = isFinal ? MIC.pitchData : _pitchHistory;
+  const dur = isFinal ? MIC.duration : Math.max(Date.now()-_recordStart,1);
+  if(pts.length>3){
+    const hzArr=pts.map(p=>p.hz);
+    const lo=Math.min(...hzArr), hi=Math.max(...hzArr);
+    const range=Math.max(hi-lo, 25);
+    ctx.strokeStyle='rgba(192,57,43,.85)'; ctx.lineWidth=2.5;
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath();
+    pts.forEach(({t,hz},i)=>{
+      const x=PAD.l+(t/dur)*dW;
+      const norm=(hz-lo)/range;                    // 0=lo, 1=hi
+      const y=PAD.t+(0.88-norm*0.76)*dH;           // hi→top, lo→bottom
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  } else {
+    ctx.fillStyle='rgba(176,160,166,.55)'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(MIC.phase==='listening'?'Speak now…':'No pitch detected — try speaking louder', W/2, H/2+4);
+  }
+
+  // rec indicator
+  if(MIC.phase==='listening'){
+    const t=((Date.now()-_recordStart)/1000).toFixed(1);
+    ctx.fillStyle='#C0392B'; ctx.beginPath(); ctx.arc(12,10,4,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle='rgba(192,57,43,.8)'; ctx.font='10px DM Sans,sans-serif';
+    ctx.textAlign='left'; ctx.fillText(t+'s',20,14);
+  }
+}
+
+// ── TRANSCRIPT COMPARISON ─────────────────────────────────────────────
+function compareTranscript(expected, heard) {
+  const norm = s => s.replace(/[。，？！,\.?! \r\n]/g,'');
+  const eArr=[...norm(expected)], hArr=[...norm(heard)];
+  const len=Math.max(eArr.length,1);
+  let matches=0;
+  const pairs=[];
+  for(let i=0;i<Math.max(eArr.length,hArr.length);i++){
+    const e=eArr[i]||'', h=hArr[i]||'';
+    const ok=e&&h&&e===h;
+    if(ok) matches++;
+    pairs.push({e,h,ok});
+  }
+  return {pairs, pct:Math.round(matches/len*100)};
+}
+
+function renderTranscriptCompare(expected, heard) {
+  if(!heard) return `<div class="transcript-compare"><div class="tc-pct" style="color:var(--ink-faint)">Nothing recognized — try again or tap "Self-report"</div></div>`;
+  const {pairs, pct} = compareTranscript(expected, heard);
+  const expHtml = pairs.map(({e,ok})=>`<span class="tc-char ${ok?'match':'miss'}">${e||'?'}</span>`).join('');
+  const heardHtml = pairs.map(({h,ok})=>`<span class="tc-char ${h?ok?'match':'miss':'neutral'}">${h||'—'}</span>`).join('');
+  return `<div class="transcript-compare">
+    <div class="tc-row"><span class="tc-label">Expected</span><span class="tc-chars">${expHtml}</span></div>
+    <div class="tc-row"><span class="tc-label">Heard</span><span class="tc-chars">${heardHtml}</span></div>
+    <div class="tc-pct">${pct}% match</div>
+  </div>`;
+}
+
+// ── TONE GUIDE (compact) ──────────────────────────────────────────────
+const TONE_SVGS = {
+  1:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,6 H20" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  2:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,10 L20,2" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  3:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,4 L8,10 L14,9 L20,5" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  4:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,2 L20,10" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+  0:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><circle cx="11" cy="8" r="2.5" fill="#B0A0A6"/></svg>`,
+};
+function renderToneGuide(py) {
+  const syls = parsePinyinSyllables(py);
+  if(syls.length===0) return '';
+  const pills = syls.map(({syllable,tone})=>
+    `<span class="tone-pill">${TONE_SVGS[tone]||TONE_SVGS[0]}<span class="tone-pill-py">${syllable}</span><span class="tone-pill-num">${tone||'n'}</span></span>`
+  ).join('');
+  return `<div style="margin-bottom:4px;font-size:.74rem;color:var(--ink-faint);text-align:center">Tones to aim for:</div><div class="tone-guide">${pills}</div>`;
+}
+
+// ── NEW renderSpeak ────────────────────────────────────────────────────
+function renderSpeak(p) {
+  const zhEsc = p.zh.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const pyEsc = p.py.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+  // Already scored (answered via any path, or back-nav to completed prompt)
+  if(S.answered){
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
+      <div class="speak-main">
+        <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+        <div class="speak-py">${p.py}</div><div class="speak-en">${p.en}</div>
+        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it again</button>
+      </div>
+      ${renderFeedback(S.lastCorrect,'','')}
+      <button class="next-btn" onclick="nextPrompt()">Next →</button>
+    </div>`;
+  }
+
+  // ── IDLE ──
+  if(MIC.phase==='idle'){
+    const canMic = _micSpeechOK() || _micAudioOK();
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
+      <div class="speak-main">
+        <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+        <div class="speak-py">${p.py}</div><div class="speak-en">${p.en}</div>
+        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it first</button>
+        <div class="audio-hint">Click any Chinese text to hear pronunciation</div>
+      </div>
+      ${renderToneGuide(p.py)}
+      ${canMic
+        ? `<button class="mic-btn" onclick="startMicSession('${zhEsc}','${pyEsc}')">🎙 Tap to Speak &amp; Record</button>`
+        : `<div style="font-size:.82rem;color:var(--ink-faint);text-align:center;margin:12px 0">Mic not available in this browser</div>`}
+      <button class="self-report-link" onclick="showSelfReport()">Skip mic — self-report instead</button>
+    </div>`;
+  }
+
+  // ── REQUESTING MIC ──
+  if(MIC.phase==='requesting'){
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
+      <div class="speak-main"><div class="speak-zh">${p.zh}</div><div class="speak-py speak-py-large">${p.py}</div></div>
+      <div class="mic-status">Requesting microphone access…</div>
+    </div>`;
+  }
+
+  // ── LISTENING ──
+  if(MIC.phase==='listening'){
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Recording</div>
+      <div class="speak-main">
+        <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+        <div class="speak-py speak-py-large">${p.py}</div>
+      </div>
+      <div class="pitch-canvas-wrap"><canvas id="pitch-canvas" style="width:100%;display:block;border-radius:10px;"></canvas></div>
+      <div class="pitch-legend">
+        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(202,138,4,.6)" stroke-width="2" stroke-dasharray="4,3"/></svg> expected tones</span>
+        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(192,57,43,.8)" stroke-width="2"/></svg> your pitch</span>
+      </div>
+      <div class="mic-status"><span class="rec-dot"></span>Recording — say the phrase above, then tap Done</div>
+      <button class="mic-stop-btn" onclick="manualStopMic('${zhEsc}','${pyEsc}')">⏹ Done Speaking</button>
+    </div>`;
+  }
+
+  // ── SELF-REPORT FALLBACK ──
+  if(MIC.phase==='self-report'){
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
+      <div class="speak-main">
+        <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+        <div class="speak-py">${p.py}</div><div class="speak-en">${p.en}</div>
+        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it again</button>
+      </div>
+      <div class="speak-btns">
+        <button class="speak-correct" onclick="scoreMicResult(true)">✓ I said it correctly</button>
+        <button class="speak-again" onclick="scoreMicResult(false)">↺ Needs more practice</button>
+      </div>
+    </div>`;
+  }
+
+  // ── DONE (mic result) ──
+  if(MIC.phase==='done'){
+    const cmp = MIC.transcript ? compareTranscript(p.zh, MIC.transcript) : null;
+    const perfectMatch = cmp && cmp.pct===100;
+    const goodMatch    = cmp && cmp.pct>=70;
+
+    // Schedule canvas redraw after DOM settles
+    setTimeout(()=>drawPitchCanvas(p.py, true), 40);
+
+    const actionHtml = perfectMatch
+      ? `<div class="feedback-bar correct" style="margin-top:12px"><span class="feedback-icon">✅</span><div><div>Perfect match — great pronunciation!</div></div></div>
+         <button class="next-btn" onclick="scoreMicResult(true)">Next →</button>`
+      : `<div style="font-size:.82rem;color:var(--ink-soft);margin:10px 0 6px;text-align:center">${goodMatch?'Almost there — how do you feel about it?':'Didn\'t quite match — try again or continue:'}</div>
+         <div class="speak-result-btns">
+           <button class="speak-correct" onclick="scoreMicResult(true)">✓ Count it correct</button>
+           <button class="speak-again" onclick="retryMic('${zhEsc}','${pyEsc}')">↺ Try again</button>
+         </div>`;
+
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Result</div>
+      <div class="speak-main">
+        <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+        <div class="speak-py">${p.py}</div>
+        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it again</button>
+      </div>
+      <div class="pitch-canvas-wrap"><canvas id="pitch-canvas" style="width:100%;display:block;border-radius:10px;"></canvas></div>
+      <div class="pitch-legend">
+        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(202,138,4,.6)" stroke-width="2" stroke-dasharray="4,3"/></svg> expected</span>
+        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(192,57,43,.8)" stroke-width="2"/></svg> your pitch</span>
+      </div>
+      ${MIC.transcript ? renderTranscriptCompare(p.zh, MIC.transcript) : '<div class="tc-pct" style="color:var(--ink-faint);text-align:center;padding:8px 0">No transcript (pitch only)</div>'}
+      ${actionHtml}
+    </div>`;
+  }
+
+  // Error state — detailed, actionable help
+  if(MIC.phase==='error'){
+    const et = MIC.errorType || 'unknown';
+    const msgs = {
+      denied: {
+        icon:'🔒',
+        title:'Microphone access blocked',
+        body:`<p>Chrome remembered a previous "deny." Here's how to fix it on Android:</p>
+          <ol>
+          <li>Tap the <strong>lock icon</strong> in the address bar</li>
+          <li>Tap <strong>Permissions → Microphone</strong></li>
+          <li>Switch to <strong>Allow</strong></li>
+          <li>Tap <strong>Reload</strong> below</li>
+          </ol>
+          <p style="margin-top:8px">Or: Android Settings → Apps → Chrome → Permissions → Microphone → Allow</p>`,
+        btn:'↺ Reload page'
+      },
+      notfound: {
+        icon:'🎤',
+        title:'No microphone found',
+        body:`<p>This device doesn't appear to have a microphone, or it isn't connected.</p>`,
+        btn:null
+      },
+      inuse: {
+        icon:'⚠️',
+        title:'Microphone is in use',
+        body:`<p>Another app is using the microphone. Close any apps using audio (calls, voice recorders) and try again.</p>`,
+        btn:'Try Again'
+      },
+      insecure: {
+        icon:'🔐',
+        title:'Microphone requires HTTPS',
+        body:`<p>Microphone access only works when the app is served over <strong>HTTPS</strong>.</p>
+          <p style="margin-top:6px">Opening the file directly (<code>file://</code>) or over plain HTTP won't work.</p>
+          <p style="margin-top:6px"><strong>Fix:</strong> Host the app on GitHub Pages (or any HTTPS server) and open it from there.</p>`,
+        btn:null
+      },
+      unknown: {
+        icon:'❓',
+        title:'Microphone unavailable',
+        body:`<p>Something went wrong accessing the microphone. Make sure Chrome has mic permission in Android Settings → Apps → Chrome → Permissions.</p>`,
+        btn:'Try Again'
+      },
+    };
+    const m = msgs[et] || msgs.unknown;
+    const reloadBtn = et==='denied'
+      ? `<button class="mic-btn" onclick="location.reload()" style="margin-top:14px">${m.btn}</button>`
+      : m.btn
+        ? `<button class="mic-btn" onclick="resetMicAndRender()" style="margin-top:14px">${m.btn}</button>`
+        : '';
+    return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
+      <div class="mic-error-card">
+        <div class="mic-error-icon">${m.icon}</div>
+        <div class="mic-error-title">${m.title}</div>
+        <div class="mic-error-body">${m.body}</div>
+      </div>
+      ${reloadBtn}
+      <button class="self-report-link" onclick="showSelfReport()">Skip mic — self-report instead</button>
+    </div>`;
+  }
+}
+
+// ── MIC SESSION CONTROL ────────────────────────────────────────────────
+async function startMicSession(zhEsc, pyEsc) {
+  _pendingPy = pyEsc;
+  MIC = {phase:'requesting', transcript:'', pitchData:[], duration:0, error:''};
+  render();
+
+  // 1. Secure context check (getUserMedia requires HTTPS or localhost)
+  if(!window.isSecureContext){
+    MIC = {...MIC, phase:'error', errorType:'insecure'};
+    render(); return;
+  }
+
+  // 1b. Microphone
+  try {
+    _micStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+  } catch(e) {
+    const t = e.name || e.constructor?.name || '';
+    let errorType = 'unknown';
+    if(t==='NotAllowedError'||t==='PermissionDeniedError') errorType='denied';
+    else if(t==='NotFoundError'||t==='DevicesNotFoundError') errorType='notfound';
+    else if(t==='NotReadableError'||t==='TrackStartError') errorType='inuse';
+    else if(t==='SecurityError') errorType='insecure';
+    MIC = {...MIC, phase:'error', errorType};
+    render(); return;
+  }
+
+  // 2. Web Audio pitch tracker
+  if(_micAudioOK()){
+    const AC = window.AudioContext||window.webkitAudioContext;
+    _micCtx = new AC();
+    _micAnalyser = _micCtx.createAnalyser();
+    _micAnalyser.fftSize = 2048;
+    _micCtx.createMediaStreamSource(_micStream).connect(_micAnalyser);
+  }
+
+  _pitchHistory=[]; _recordStart=Date.now();
+  MIC.phase='listening'; render();
+
+  // 3. Pitch tracking RAF loop (updates canvas directly without full re-render)
+  if(_micAnalyser){
+    const buf=new Float32Array(_micAnalyser.fftSize);
+    (function loop(){
+      if(MIC.phase!=='listening'){return;}
+      _micAnalyser.getFloatTimeDomainData(buf);
+      const hz=detectPitch(buf,_micCtx.sampleRate);
+      if(hz>60&&hz<650) _pitchHistory.push({t:Date.now()-_recordStart, hz});
+      drawPitchCanvas(pyEsc, false);
+      _pitchRAF=requestAnimationFrame(loop);
+    })();
+  }
+
+  // 4. Speech recognition
+  if(_micSpeechOK()){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    _micRecognizer=new SR();
+    _micRecognizer.lang='zh-CN';
+    _micRecognizer.continuous=false;
+    _micRecognizer.interimResults=false;
+    _micRecognizer.maxAlternatives=3;
+    _micRecognizer.onresult=e=>{ MIC.transcript=e.results[0][0].transcript||''; };
+    _micRecognizer.onerror=e=>{ if(e.error!=='no-speech'&&e.error!=='aborted') MIC.error=e.error; };
+    _micRecognizer.onend=()=>{ if(MIC.phase==='listening') _finishRecording(pyEsc); };
+    try{ _micRecognizer.start(); }catch(e){}
+    // Hard cap: 8s
+    setTimeout(()=>{ if(MIC.phase==='listening'&&_micRecognizer){ try{_micRecognizer.stop();}catch(e){} }}, 8000);
+  } else {
+    // No speech API: auto-stop after 5s
+    setTimeout(()=>{ if(MIC.phase==='listening') _finishRecording(pyEsc); }, 5000);
+  }
+}
+
+function manualStopMic(zhEsc, pyEsc) {
+  if(_micRecognizer){ try{_micRecognizer.stop();}catch(e){} }
+  else _finishRecording(pyEsc||_pendingPy);
+}
+
+function _finishRecording(py) {
+  if(_pitchRAF){ cancelAnimationFrame(_pitchRAF); _pitchRAF=null; }
+  if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
+  if(_micCtx){ try{_micCtx.close();}catch(e){} _micCtx=null; } _micAnalyser=null;
+  _micRecognizer=null;
+  MIC.phase='done';
+  MIC.pitchData=[..._pitchHistory];
+  MIC.duration=Math.max(Date.now()-_recordStart,1);
+  render();
+}
+
+function retryMic(zhEsc, pyEsc) {
+  resetMic();
+  startMicSession(zhEsc, pyEsc);
+}
+
+function showSelfReport(){
+  resetMic();
+  MIC.phase='self-report';
+  render();
+}
+
+function resetMicAndRender(){ resetMic(); render(); }
+
+function resetMic() {
+  if(_pitchRAF){ cancelAnimationFrame(_pitchRAF); _pitchRAF=null; }
+  if(_micRecognizer){ try{_micRecognizer.stop();}catch(e){} _micRecognizer=null; }
+  if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
+  if(_micCtx){ try{_micCtx.close();}catch(e){} _micCtx=null; } _micAnalyser=null;
+  MIC={phase:'idle', transcript:'', pitchData:[], duration:0, error:''};
+  _pitchHistory=[];
+}
+
+function scoreMicResult(correct) {
+  S.answered=true; S.lastCorrect=correct; S.scoredTotal++; if(correct) S.correct++;
+  resetMic();
+  commitState(); render();
+}
+
+
+// ── SCORES ──────────────────────────────────────────────────────────
+function getScores() { try { return JSON.parse(localStorage.getItem('hsk2_scores') || '{}'); } catch(e) { return {}; } }
+function saveScore(id, pct) { const sc = getScores(); if (!sc[id] || pct > sc[id]) { sc[id] = pct; localStorage.setItem('hsk2_scores', JSON.stringify(sc)); } }
+function getHighScore(id) { return getScores()[id] ?? null; }
+function getCompletedCount() { return Object.keys(getScores()).length; }
+
+// ── RESUME SAVE/LOAD ─────────────────────────────────────────────────
+const RESUME_KEY = 'hsk2_resume';
+function saveResume() {
+  if (S.screen !== 'lesson') return;
+  const data = {
+    lessonIdx: S.lessonIdx,
+    promptIdx: S.promptIdx,
+    maxVisited: S.maxVisited,
+    scoredTotal: S.scoredTotal,
+    correct: S.correct,
+    promptStates: S.promptStates,
+  };
+  localStorage.setItem(RESUME_KEY, JSON.stringify(data));
+}
+function loadResume() {
+  try { return JSON.parse(localStorage.getItem(RESUME_KEY)); } catch(e) { return null; }
+}
+function clearResume() { localStorage.removeItem(RESUME_KEY); }
+function hasSavedProgress(lessonIdx) {
+  const r = loadResume();
+  return r && r.lessonIdx === lessonIdx && r.promptIdx > 0;
+}
+
+// ── STATE ────────────────────────────────────────────────────────────
+// S.promptStates[i] stores the full interactive state for prompt i so
+// the user can navigate back and review (or forward to already-seen).
+// FIX: selectedOpt is now an INTEGER INDEX into p.opts[], never a string.
+// This avoids all HTML-attribute apostrophe escaping issues entirely.
+let S = {
+  screen: 'home',
+  lessonIdx: 0,
+  promptIdx: 0,
+  maxVisited: 0,        // highest promptIdx visited this session
+  scoredTotal: 0,
+  correct: 0,
+  promptStates: [],     // per-prompt state for back/forward nav
+  // live prompt state (mirrored into promptStates on every change):
+  answered: false,
+  lastCorrect: null,
+  selectedOpt: null,    // INTEGER index into p.opts (fill / tr)
+  posSelected: null,    // position index (pos prompt)
+  multiHeld: null,      // bank tile index currently held
+  multiAssigned: {},    // { blankId: wordString }
+  multiUsed: [],        // bank indices already placed
+  woShuffled: null,
+  woSelected: [],
+  woAnswer: [],
+};
+
+// ── PROMPT STATE SNAPSHOT ────────────────────────────────────────────
+function snapshotState() {
+  return {
+    answered: S.answered, lastCorrect: S.lastCorrect,
+    selectedOpt: S.selectedOpt,
+    posSelected: S.posSelected,
+    multiHeld: S.multiHeld, multiAssigned: JSON.parse(JSON.stringify(S.multiAssigned)),
+    multiUsed: [...S.multiUsed],
+    woShuffled: S.woShuffled ? [...S.woShuffled] : null,
+    woSelected: [...S.woSelected], woAnswer: [...S.woAnswer],
+  };
+}
+function restoreState(snap) {
+  if (!snap) return;
+  S.answered = snap.answered; S.lastCorrect = snap.lastCorrect;
+  S.selectedOpt = snap.selectedOpt;
+  S.posSelected = snap.posSelected;
+  S.multiHeld = snap.multiHeld; S.multiAssigned = JSON.parse(JSON.stringify(snap.multiAssigned));
+  S.multiUsed = [...snap.multiUsed];
+  S.woShuffled = snap.woShuffled ? [...snap.woShuffled] : null;
+  S.woSelected = [...snap.woSelected]; S.woAnswer = [...snap.woAnswer];
+}
+function clearLiveState() {
+  S.answered = false; S.lastCorrect = null; S.selectedOpt = null;
+  S.posSelected = null; S.multiHeld = null; S.multiAssigned = {};
+  S.multiUsed = []; S.woShuffled = null; S.woSelected = []; S.woAnswer = [];
+}
+function commitState() {
+  S.promptStates[S.promptIdx] = snapshotState();
+  saveResume();
+}
+
+// ── UTILITIES ────────────────────────────────────────────────────────
+function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function zhEl(text) { const e = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); const esc = text.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); return `<span class="zh" onclick="speakChinese('${esc}')">${e}</span>`; }
+function countScoredPrompts(prompts) { return prompts.filter(p => p.t !== 'intro').length; }
+function getLessonProgress() {
+  const L = LESSONS[S.lessonIdx]; let s = 0;
+  for (let i = 0; i <= S.promptIdx; i++) if (L.prompts[i] && L.prompts[i].t !== 'intro') s++;
+  return { scored: s, total: countScoredPrompts(L.prompts) };
+}
+
+// ── RENDER DISPATCH ──────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (S.screen === 'home') app.innerHTML = renderHome();
+  else if (S.screen === 'intro') app.innerHTML = renderLessonIntro();
+  else if (S.screen === 'lesson') app.innerHTML = renderLesson();
+  else if (S.screen === 'complete') app.innerHTML = renderComplete();
+}
+
+// ── HOME ─────────────────────────────────────────────────────────────
+function renderHome() {
+  const done = getCompletedCount();
+  const pct = Math.round(done / LESSONS.length * 100);
+  const cards = LESSONS.map((L, i) => {
+    const hs = getHighScore(L.id); const completed = hs !== null;
+    const inProgress = hasSavedProgress(i);
+    const locked = i > 0 && getHighScore(LESSONS[i-1].id) === null && !hasSavedProgress(i);
+    const cls = completed ? 'completed' : inProgress ? 'in-progress' : locked ? 'locked' : '';
+    const tags = L.grammar.map(g => `<span class="tag">${g.zh} ${g.py}</span>`).join('');
+    let score = '';
+    if (hs !== null) score = `<div><div class="high-score">${hs}%</div><div style="font-size:.7rem;color:var(--ink-faint)">Best</div></div>`;
+    else if (inProgress) score = `<div style="font-size:.75rem;color:var(--gold);font-weight:600">In progress</div>`;
+    else if (locked) score = `<span style="font-size:1.1rem;color:var(--ink-faint)">🔒</span>`;
+    return `<div class="lesson-card ${cls}" onclick="${locked?'':'startLessonIntro('+i+')'}">
+      <div class="lesson-num">${L.id}</div>
+      <div class="lesson-info"><div class="lesson-title">${L.title}</div><div style="font-size:.8rem;color:var(--ink-soft)">${L.subtitle}</div><div class="lesson-tags">${tags}</div></div>
+      ${score}</div>`;
+  }).join('');
+  return `<div class="home fade-in">
+    <div class="home-header"><div class="home-title">普通话</div><div class="home-sub">HSK 2 Grammar Journey · 10 Lessons</div></div>
+    <div class="progress-banner">
+      <svg class="progress-ring" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="26" fill="none" stroke="#F0E8E8" stroke-width="6"/>
+        <circle cx="32" cy="32" r="26" fill="none" stroke="#C0392B" stroke-width="6"
+          stroke-dasharray="${2*Math.PI*26}" stroke-dashoffset="${2*Math.PI*26*(1-pct/100)}"
+          stroke-linecap="round" transform="rotate(-90 32 32)"/>
+        <text x="32" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="#C0392B" font-family="DM Sans,sans-serif">${pct}%</text>
+      </svg>
+      <div class="progress-info">
+        <div class="progress-label">Overall Progress</div>
+        <div style="font-size:1rem;font-weight:600">${done} of ${LESSONS.length} lessons completed</div>
+        <div style="font-size:.82rem;color:var(--ink-soft);margin-top:2px">${done>0?'Keep going! 加油！':'Begin your journey below'}</div>
+      </div>
+    </div>
+    <div class="lessons-grid">${cards}</div></div>`;
+}
+
+// ── LESSON INTRO ─────────────────────────────────────────────────────
+function renderLessonIntro() {
+  const L = LESSONS[S.lessonIdx]; const hs = getHighScore(L.id);
+  const hasSaved = hasSavedProgress(S.lessonIdx);
+  const gpCards = L.grammar.map(g => `<div class="gp-card">
+    <div class="gp-card-top"><span class="gp-zh" onclick="speakChinese('${g.zh}')">${g.zh}</span><span class="gp-py">${g.py}</span><span class="gp-meaning">— ${g.meaning}</span></div>
+    <div class="gp-pattern"><strong>Pattern</strong>${g.pattern}</div></div>`).join('');
+  const resumeBtn = hasSaved ? `<button class="resume-btn" onclick="resumeLesson()">▶ Continue where I left off</button>` : '';
+  return `<div class="lesson-intro fade-in">
+    <button class="back-btn" onclick="goHome()">← All Lessons</button>
+    <div class="intro-header"><div class="intro-lesson-num">Lesson ${L.id}</div><div class="intro-title">${L.title}</div><div class="intro-desc">${L.subtitle} · ${countScoredPrompts(L.prompts)} practice prompts</div></div>
+    <div class="grammar-preview">${gpCards}</div>
+    ${hs!==null?`<div style="text-align:center;margin-bottom:12px;font-size:.85rem;color:var(--ink-soft)">Your best: <strong style="color:var(--red)">${hs}%</strong></div>`:''}
+    ${resumeBtn}
+    <button class="start-btn" onclick="startLesson(false)">${hasSaved?'Start Over':'Start Lesson →'}</button></div>`;
+}
+
+// ── LESSON VIEW ──────────────────────────────────────────────────────
+function renderLesson() {
+  const L = LESSONS[S.lessonIdx]; const p = L.prompts[S.promptIdx];
+  const { scored, total } = getLessonProgress();
+  const pct = total > 0 ? (scored / total * 100) : 0;
+  const scorePct = S.scoredTotal > 0 ? Math.round(S.correct / S.scoredTotal * 100) : 0;
+  const canBack = S.promptIdx > 0;
+  const canForward = S.promptIdx < S.maxVisited;
+  let promptHtml = '';
+  if (p.t === 'intro') promptHtml = renderIntroCard(p, L);
+  else if (p.t === 'speak') promptHtml = renderSpeak(p);
+  else if (p.t === 'fill') promptHtml = renderFill(p);
+  else if (p.t === 'pos') promptHtml = renderPos(p);
+  else if (p.t === 'multi') promptHtml = renderMulti(p);
+  else if (p.t === 'wo') promptHtml = renderWordOrder(p);
+  else if (p.t === 'tr') promptHtml = renderTranslate(p);
+  return `<div class="lesson-view fade-in">
+    <div class="lesson-topbar">
+      <button class="quit-btn" title="Quit" onclick="confirmQuit()">✕</button>
+      <div class="lesson-progress-wrap"><div class="lesson-progress" style="width:${pct}%"></div></div>
+      <div class="score-display">${S.scoredTotal>0?scorePct+'%':'—'}</div>
+      <div class="nav-btns">
+        <button class="nav-btn" onclick="navBack()" ${canBack?'':' disabled'} title="Previous">◀</button>
+        <button class="nav-btn" onclick="navForward()" ${canForward?'':' disabled'} title="Next">▶</button>
+      </div>
+    </div>
+    <div class="prompt-area">${promptHtml}</div></div>`;
+}
+
+// ── INTRO CARD ───────────────────────────────────────────────────────
+function renderIntroCard(p, L) {
+  const g = L.grammar[p.g];
+  const exHtml = g.examples.map(ex => {
+    const esc = ex.zh.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="intro-example">
+      <div class="ex-zh" onclick="speakChinese('${esc}')">${ex.zh}</div>
+      <div class="ex-py">${ex.py}</div><div class="ex-en">${ex.en}</div></div>`;
+  }).join('');
+  const zhEsc = g.zh.replace(/'/g,"\\'");
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">📖 New Grammar Point</div>
+    <div class="intro-card-inner">
+      <div class="intro-point-zh" onclick="speakChinese('${zhEsc}')">${g.zh}</div>
+      <div class="intro-point-py">${g.py}</div>
+      <div class="intro-point-meaning">${g.meaning}</div>
+      <div class="intro-pattern-box"><strong>Pattern</strong>${g.pattern}</div>
+      <div class="intro-explanation">${g.explanation}</div>
+      <div class="intro-examples">${exHtml}</div>
+      <button class="continue-btn" onclick="nextPrompt()">Got it — let's practice! →</button>
+    </div></div>`;
+}
+
+// ── SPEAK ────────────────────────────────────────────────────────────
+// renderSpeak defined above in mic JS block
+
+// ── FILL-IN-BLANK ─────────────────────────────────────────────────────
+// FIX: options are rendered with data-idx; clicks call selectOpt(idx)
+function renderFill(p) {
+  const parts = p.sent.split('___');
+  const filled = S.answered
+    ? `<span class="blank-box" style="${S.lastCorrect?'color:var(--green);border-color:var(--green)':'color:var(--wrong);border-color:var(--wrong)'}"> ${p.ans} </span>`
+    : `<span class="blank-box">　　　</span>`;
+  const sentHtml = parts.map((pt, i) => `${zhEl(pt)}${i < parts.length-1 ? filled : ''}`).join('');
+  const opts = p.opts.map((o, i) => {
+    let cls = '';
+    if (S.answered) { if (o === p.ans) cls = 'correct'; else if (i === S.selectedOpt && !S.lastCorrect) cls = 'wrong'; }
+    else if (i === S.selectedOpt) cls = 'selected';
+    return `<button class="option-btn ${cls}" onclick="${S.answered?'':'selectOpt('+i+')'}" ${S.answered?'disabled':''}>${zhEl(o)}</button>`;
+  }).join('');
+  const btn = !S.answered
+    ? `<button class="check-btn" onclick="checkFill()" ${S.selectedOpt!==null?'':'disabled'}>Check</button>`
+    : `<button class="next-btn" onclick="nextPrompt()">Next →</button>`;
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">✏️ Fill in the Blank</div>
+    <div class="sentence-display">${sentHtml}</div>
+    <div class="sentence-py">${p.py}</div><div class="sentence-en">${p.en}</div>
+    <div class="options-grid">${opts}</div>${btn}
+    ${S.answered ? renderFeedback(S.lastCorrect, 'Correct: '+p.ans, p.zh) : ''}
+  </div>`;
+}
+
+// ── POSITION PROMPT ───────────────────────────────────────────────────
+function renderPos(p) {
+  const numMarkers = p.segs.length + 1;
+  let sentParts = '';
+  for (let i = 0; i < numMarkers; i++) {
+    let cls = 'pos-marker';
+    if (S.answered) {
+      if (i === p.ans) cls += ' correct-pos';
+      else if (i === S.posSelected && i !== p.ans) cls += ' wrong-pos';
+    } else if (i === S.posSelected) cls += ' selected';
+    sentParts += `<span class="${cls}" onclick="${S.answered?'':'selectPos('+i+')'}">${i+1}</span>`;
+    if (i < p.segs.length) sentParts += `<span class="pos-seg">${p.segs[i]}</span>`;
+  }
+  let previewHtml = '';
+  const previewPos = S.answered ? p.ans : S.posSelected;
+  if (previewPos !== null) {
+    const preview = buildPosSentence(p, previewPos);
+    const col = S.answered ? (S.lastCorrect?'var(--green)':'var(--wrong)') : 'var(--ink-soft)';
+    previewHtml = `<div class="pos-preview"><div class="pos-preview-text" style="color:${col}">${preview}</div></div>`;
+  }
+  const wordEsc = p.word.replace(/'/g,"\\'");
+  const btn = !S.answered
+    ? `<button class="check-btn" onclick="checkPos()" ${S.posSelected!==null?'':'disabled'}>Check</button>`
+    : `<button class="next-btn" onclick="nextPrompt()">Next →</button>`;
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">📍 Place the Word</div>
+    <div class="pos-word-display"><div class="pos-word-chip" onclick="speakChinese('${wordEsc}')">${p.word}<span class="chip-py">${p.wordPy}</span></div></div>
+    ${!S.answered?`<div class="pos-instruction">Tap the numbered slot where <strong>${p.word}</strong> belongs</div>`:''}
+    <div class="pos-sentence-wrap">${sentParts}</div>
+    ${previewHtml}
+    <div style="text-align:center;font-size:.82rem;color:var(--ink-faint);margin-bottom:14px">${p.en}</div>
+    ${btn}${S.answered ? renderFeedback(S.lastCorrect,'','') : ''}
+  </div>`;
+}
+function buildPosSentence(p, pos) {
+  let parts = [];
+  for (let i = 0; i <= p.segs.length; i++) {
+    if (i === pos) parts.push(`<span class="pos-preview-word">${p.word}</span>`);
+    if (i < p.segs.length) parts.push(`<span style="font-family:'Noto Sans SC',sans-serif;font-size:1.05rem">${p.segs[i]}</span>`);
+  }
+  return parts.join('');
+}
+
+// ── MULTI-BLANK ───────────────────────────────────────────────────────
+function renderMulti(p) {
+  const sentHtml = p.parts.map(part => {
+    if (typeof part === 'string') return `<span class="multi-seg">${zhEl(part)}</span>`;
+    const id = part.id; const assigned = S.multiAssigned[id];
+    let cls = 'multi-blank';
+    if (S.answered) {
+      cls += (assigned === p.answers[id]) ? ' correct-blank' : ' wrong-blank';
+    } else if (assigned && assigned !== '—') cls += ' filled';
+    else if (assigned === '—') cls += ' filled-dash';
+    const inner = assigned
+      ? `<span class="blank-label">${id}</span><span class="blank-word">${assigned}</span>`
+      : `<span class="blank-label">${id}</span>`;
+    return `<span class="${cls}" onclick="${S.answered?'':'clickBlank(\''+id+'\')'}">${inner}</span>`;
+  }).join('');
+
+  const bankHtml = p.bank.map((w, i) => {
+    const isDash = w === '—';
+    let cls = `bank-tile ${isDash?'dash-tile':''}`;
+    if (S.answered || S.multiUsed.includes(i)) cls += ' used';
+    else if (S.multiHeld === i) cls += ' held';
+    return `<div class="${cls}" onclick="${S.answered||S.multiUsed.includes(i)?'':'holdBankTile('+i+')'}"><span class="tile-zh">${w}</span></div>`;
+  }).join('');
+
+  const allFilled = p.parts.filter(pt => typeof pt === 'object').every(pt => S.multiAssigned[pt.id] !== undefined);
+  const btn = !S.answered
+    ? `<button class="check-btn" onclick="checkMulti()" ${allFilled?'':'disabled'}>Check</button>`
+    : `<button class="next-btn" onclick="nextPrompt()">Next →</button>`;
+
+  let correctNote = '';
+  if (S.answered && !S.lastCorrect) {
+    const lines = Object.entries(p.answers).map(([k,v]) => `${k}→${v}`).join('  ');
+    correctNote = `<div style="font-size:.8rem;color:var(--wrong);margin-top:6px">Correct: ${lines}</div>`;
+  }
+
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">🔤 Fill Multiple Blanks</div>
+    <div class="multi-en">${p.en}</div>
+    <div class="multi-sentence">${sentHtml}</div>
+    ${!S.answered?'<div style="font-size:.78rem;color:var(--ink-faint);text-align:center;margin-bottom:6px">Tap a word to hold it (red), then tap a blank slot — use "—" for empty slots</div>':''}
+    <div class="multi-bank-label">Word Bank</div>
+    <div class="multi-bank">${bankHtml}</div>
+    ${btn}${correctNote}${S.answered ? renderFeedback(S.lastCorrect,'','') : ''}
+  </div>`;
+}
+
+// ── WORD ORDER ────────────────────────────────────────────────────────
+function renderWordOrder(p) {
+  if (!S.woShuffled) S.woShuffled = shuffle(p.words.map((w,i) => ({...w, origIdx:i})));
+  const answerTiles = S.woAnswer.map((item, i) => {
+    const cls = S.answered ? (S.lastCorrect ? 'correct-tile' : 'wrong-tile') : '';
+    const wEsc = item.w.replace(/'/g,"\\'");
+    return `<span class="answer-tile ${cls}" onclick="${S.answered?'':'removeFromAnswer('+i+')'}">${zhEl(item.w)}<span style="font-size:.62rem;color:var(--ink-soft)">${item.p}</span></span>`;
+  }).join('');
+  const availTiles = S.woShuffled.map((item, i) => {
+    const used = S.woSelected.includes(i);
+    return `<span class="word-tile ${used?'used':''}" onclick="${used||S.answered?'':'addToAnswer('+i+')'}">${zhEl(item.w)}<span class="tile-py">${item.p}</span></span>`;
+  }).join('');
+  const correct = p.words.map(w => w.w).join('');
+  const correctEsc = correct.replace(/'/g,"\\'");
+  const btn = !S.answered
+    ? `<button class="check-btn" onclick="checkWordOrder()" ${S.woAnswer.length===p.words.length?'':'disabled'}>Check</button>`
+    : `<button class="next-btn" onclick="nextPrompt()">Next →</button>`;
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">🧩 Arrange the Words</div>
+    <div style="font-size:.88rem;color:var(--ink-soft);margin-bottom:12px">Translate: <em>${p.en}</em></div>
+    <div class="wordorder-answer-area ${S.woAnswer.length?'has-words':''}">
+      ${S.woAnswer.length?answerTiles:'<span class="answer-placeholder">Tap words below to build the sentence</span>'}
+    </div>
+    <div class="wordorder-tiles">${availTiles}</div>
+    ${btn}${S.answered ? renderFeedback(S.lastCorrect, 'Correct: '+correct, correct) : ''}
+  </div>`;
+}
+
+// ── TRANSLATE ─────────────────────────────────────────────────────────
+// FIX: options use index; text displayed as innerHTML (safe), never in onclick
+function renderTranslate(p) {
+  const zhEsc = p.zh.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const opts = p.opts.map((o, i) => {
+    let cls = '';
+    if (S.answered) { if (o === p.ans) cls = 'correct'; else if (i === S.selectedOpt && !S.lastCorrect) cls = 'wrong'; }
+    else if (i === S.selectedOpt) cls = 'selected';
+    // o is displayed as text content — safe because it's English, no JS injection needed
+    const safeO = o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<button class="option-btn ${cls}" style="font-size:.88rem;text-align:left;justify-content:flex-start;padding:12px 14px;" onclick="${S.answered?'':'selectOpt('+i+')'}" ${S.answered?'disabled':''}>${safeO}</button>`;
+  }).join('');
+  const btn = !S.answered
+    ? `<button class="check-btn" onclick="checkTranslate()" ${S.selectedOpt!==null?'':'disabled'}>Check</button>`
+    : `<button class="next-btn" onclick="nextPrompt()">Next →</button>`;
+  return `<div class="prompt-card pop-in"><div class="prompt-type-label">🌐 Translate to English</div>
+    <div class="translate-center">
+      <div class="translate-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
+      <div class="translate-py">${p.py}</div>
+      <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it</button>
+    </div>
+    <div style="margin-top:18px"><div class="options-grid" style="grid-template-columns:1fr;">${opts}</div></div>
+    ${btn}${S.answered ? renderFeedback(S.lastCorrect, 'Answer: '+p.ans, '') : ''}
+  </div>`;
+}
+
+// ── FEEDBACK ─────────────────────────────────────────────────────────
+function renderFeedback(correct, detail, zhText) {
+  const icon = correct ? '✅' : '❌'; const msg = correct ? 'Correct! 太棒了！' : 'Not quite.';
+  const zhEsc = zhText ? zhText.replace(/\\/g,'\\\\').replace(/'/g,"\\'") : '';
+  const dtl = detail
+    ? `<div class="feedback-detail">${detail}${zhText?` <span class="zh" style="font-size:.9rem" onclick="speakChinese('${zhEsc}')">🔊</span>`:''}</div>` : '';
+  return `<div class="feedback-bar ${correct?'correct':'wrong'}"><span class="feedback-icon">${icon}</span><div><div>${msg}</div>${dtl}</div></div>`;
+}
+
+// ── COMPLETE ──────────────────────────────────────────────────────────
+function renderComplete() {
+  const L = LESSONS[S.lessonIdx];
+  const pct = S.scoredTotal>0 ? Math.round(S.correct/S.scoredTotal*100) : 0;
+  const hs = getHighScore(L.id); const isNew = hs === pct;
+  const trophy = pct>=90?'🏆':pct>=70?'🥈':'📚';
+  const grade = pct>=90?'Excellent!':pct>=70?'Good job!':'Keep practicing!';
+  const nextIdx = S.lessonIdx+1; const hasNext = nextIdx < LESSONS.length;
+  return `<div class="complete fade-in"><div class="complete-card">
+    <div class="complete-trophy">${trophy}</div>
+    <div class="complete-title">${grade}</div>
+    <div class="complete-sub">Lesson ${L.id}: ${L.title}</div>
+    <div class="score-big">${pct}<span style="font-size:2rem">%</span></div>
+    <div class="score-label">${S.correct} correct out of ${S.scoredTotal} prompts</div>
+    ${isNew?'<div class="high-score-badge">⭐ New High Score!</div>':`<div style="font-size:.8rem;color:var(--ink-faint);margin-top:4px">Best: ${hs}%</div>`}
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${S.correct}</div><div class="stat-label">Correct</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--red)">${S.scoredTotal-S.correct}</div><div class="stat-label">Incorrect</div></div>
+      <div class="stat-box"><div class="stat-num">${pct}%</div><div class="stat-label">Score</div></div>
+    </div>
+  </div>
+  <div class="complete-actions">
+    ${hasNext&&pct>=50?`<button class="action-btn primary" onclick="startLessonIntro(${nextIdx})">Next Lesson: ${LESSONS[nextIdx].title} →</button>`:''}
+    <button class="action-btn secondary" onclick="startLessonIntro(${S.lessonIdx})">Retry This Lesson</button>
+    <button class="action-btn secondary" onclick="goHome()">← All Lessons</button>
+  </div></div>`;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────
+function goHome() { S.screen='home'; render(); }
+function startLessonIntro(idx) { S.screen='intro'; S.lessonIdx=idx; render(); }
+
+function startLesson(isResume) {
+  resetMic();
+  const r = isResume ? loadResume() : null;
+  if (r && r.lessonIdx === S.lessonIdx) {
+    S.promptIdx = r.promptIdx;
+    S.maxVisited = r.maxVisited;
+    S.scoredTotal = r.scoredTotal;
+    S.correct = r.correct;
+    S.promptStates = r.promptStates || [];
+    restoreState(S.promptStates[S.promptIdx] || null);
+  } else {
+    clearResume();
+    S.promptIdx=0; S.maxVisited=0; S.scoredTotal=0; S.correct=0;
+    S.promptStates=[]; clearLiveState();
+  }
+  S.screen='lesson'; render();
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  if (p.t==='speak'||p.t==='tr') speakChinese(p.zh);
+  else if (p.t==='intro') speakChinese(LESSONS[S.lessonIdx].grammar[p.g].zh);
+  else if (p.t==='pos') speakChinese(p.word);
+}
+
+function resumeLesson() { startLesson(true); }
+
+function nextPrompt() {
+  commitState();
+  const L = LESSONS[S.lessonIdx];
+  if (S.promptIdx + 1 >= L.prompts.length) {
+    // Lesson finished
+    const pct = S.scoredTotal>0 ? Math.round(S.correct/S.scoredTotal*100) : 0;
+    saveScore(L.id, pct);
+    clearResume();
+    S.screen='complete'; render(); return;
+  }
+  S.promptIdx++;
+  S.maxVisited = Math.max(S.maxVisited, S.promptIdx);
+  if (S.promptStates[S.promptIdx]) {
+    restoreState(S.promptStates[S.promptIdx]);
+  } else {
+    clearLiveState();
+  }
+  render();
+  const p = L.prompts[S.promptIdx];
+  if (!S.answered) {
+    if (p.t==='speak'||p.t==='tr') speakChinese(p.zh);
+    else if (p.t==='intro') speakChinese(L.grammar[p.g].zh);
+    else if (p.t==='pos') speakChinese(p.word);
+  }
+}
+
+function navBack() {
+  if (S.promptIdx <= 0) return;
+  resetMic();
+  commitState();
+  S.promptIdx--;
+  restoreState(S.promptStates[S.promptIdx] || null);
+  if (!S.promptStates[S.promptIdx]) clearLiveState();
+  render();
+}
+
+function navForward() {
+  if (S.promptIdx >= S.maxVisited) return;
+  resetMic();
+  commitState();
+  S.promptIdx++;
+  if (S.promptStates[S.promptIdx]) restoreState(S.promptStates[S.promptIdx]);
+  else clearLiveState();
+  render();
+}
+
+function confirmQuit() {
+  if (confirm('Quit this lesson? Progress is saved — you can resume later.')) {
+    resetMic();
+    commitState();
+    goHome();
+  }
+}
+
+// ── ANSWER HANDLERS ───────────────────────────────────────────────────
+function answerSpeak(correct) { scoreMicResult(correct); } // legacy alias
+// FIX: selectOpt takes an integer index
+function selectOpt(idx) {
+  if (S.answered) return;
+  S.selectedOpt = idx;
+  commitState(); render();
+}
+function checkFill() {
+  if (S.selectedOpt === null) return;
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  S.answered=true; S.lastCorrect=(p.opts[S.selectedOpt]===p.ans);
+  S.scoredTotal++; if(S.lastCorrect) S.correct++;
+  commitState(); render();
+}
+function checkTranslate() {
+  if (S.selectedOpt === null) return;
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  S.answered=true; S.lastCorrect=(p.opts[S.selectedOpt]===p.ans);
+  S.scoredTotal++; if(S.lastCorrect) S.correct++;
+  commitState(); render();
+}
+function selectPos(idx) { if(S.answered) return; S.posSelected=idx; commitState(); render(); }
+function checkPos() {
+  if (S.posSelected===null) return;
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  S.answered=true; S.lastCorrect=(S.posSelected===p.ans); S.scoredTotal++; if(S.lastCorrect) S.correct++;
+  if (S.lastCorrect) speakChinese(buildPosSentenceText(p, p.ans));
+  commitState(); render();
+}
+function buildPosSentenceText(p, pos) {
+  let parts=[];
+  for(let i=0;i<=p.segs.length;i++){if(i===pos)parts.push(p.word);if(i<p.segs.length)parts.push(p.segs[i]);}
+  return parts.join('');
+}
+function holdBankTile(idx) { if(S.answered) return; S.multiHeld=(S.multiHeld===idx?null:idx); commitState(); render(); }
+function clickBlank(id) {
+  if(S.answered) return;
+  if (S.multiHeld === null) {
+    if (S.multiAssigned[id] !== undefined) {
+      const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+      const word = S.multiAssigned[id];
+      const bi = S.multiUsed.find(i => p.bank[i]===word && S.multiUsed.includes(i));
+      // find correct bank index
+      for(let k=0;k<p.bank.length;k++){if(p.bank[k]===word&&S.multiUsed.includes(k)){S.multiUsed.splice(S.multiUsed.indexOf(k),1);break;}}
+      delete S.multiAssigned[id];
+      commitState(); render();
+    }
+    return;
+  }
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  if (S.multiAssigned[id] !== undefined) {
+    const old=S.multiAssigned[id];
+    for(let k=0;k<p.bank.length;k++){if(p.bank[k]===old&&S.multiUsed.includes(k)){S.multiUsed.splice(S.multiUsed.indexOf(k),1);break;}}
+  }
+  S.multiAssigned[id] = p.bank[S.multiHeld];
+  S.multiUsed.push(S.multiHeld); S.multiHeld=null;
+  commitState(); render();
+}
+function checkMulti() {
+  const p = LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  const blanks = p.parts.filter(pt=>typeof pt==='object').map(pt=>pt.id);
+  let ok=true;
+  for(const id of blanks){if(S.multiAssigned[id]!==p.answers[id]){ok=false;break;}}
+  S.answered=true; S.lastCorrect=ok; S.scoredTotal++; if(ok) S.correct++;
+  commitState(); render();
+}
+function addToAnswer(si) {
+  if(S.answered||S.woSelected.includes(si)) return;
+  S.woSelected.push(si); S.woAnswer.push({...S.woShuffled[si]});
+  commitState(); render();
+}
+function removeFromAnswer(ai) {
+  if(S.answered) return;
+  const item=S.woAnswer[ai];
+  for(let k=0;k<S.woShuffled.length;k++){
+    if(S.woShuffled[k].origIdx===item.origIdx&&S.woSelected.includes(k)){S.woSelected.splice(S.woSelected.indexOf(k),1);break;}
+  }
+  S.woAnswer.splice(ai,1); commitState(); render();
+}
+function checkWordOrder() {
+  const p=LESSONS[S.lessonIdx].prompts[S.promptIdx];
+  const user=S.woAnswer.map(w=>w.w).join(''); const correct=p.words.map(w=>w.w).join('');
+  S.answered=true; S.lastCorrect=(user===correct); S.scoredTotal++; if(S.lastCorrect) S.correct++;
+  if(S.lastCorrect) speakChinese(correct);
+  commitState(); render();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+render();
+
+</script></body></html>

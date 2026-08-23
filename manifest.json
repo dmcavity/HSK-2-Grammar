@@ -1,0 +1,28 @@
+{
+  "name": "普通话 HSK 2 Grammar Journey",
+  "short_name": "HSK 2",
+  "description": "10 interactive lessons covering all HSK 2 grammar constructions with audio, exercises, and spaced repetition.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFF9F3",
+  "theme_color": "#C0392B",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["education", "language"]
+}
