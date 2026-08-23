@@ -247,6 +247,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .tc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .tc-dot.good{background:var(--green);}
 .tc-dot.poor{background:var(--wrong);}
+.rec-toggle{display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;user-select:none;padding:8px 10px;border-radius:10px;background:#FAF3F4;}
+.rec-toggle:hover{background:#F4EBEC;}
+.rec-toggle-box{flex-shrink:0;width:18px;height:18px;border-radius:5px;border:2px solid #C8B8BC;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;background:#fff;margin-top:1px;}
+.rec-toggle-box.on{background:var(--red);border-color:var(--red);}
+.rec-toggle-label{font-size:.78rem;color:var(--ink-soft);line-height:1.4;}
+.rec-toggle-label em{color:var(--gold);font-style:normal;}
 .self-report-link{display:block;width:100%;background:none;border:none;color:var(--ink-faint);font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;text-decoration:underline;text-underline-offset:3px;padding:4px;}
 .self-report-link:hover{color:var(--ink-soft);}
 .mic-status{display:flex;align-items:center;gap:8px;font-size:.83rem;color:var(--ink-soft);margin:6px 0 10px;justify-content:center;}
@@ -993,7 +999,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'C3';
+const APP_BUILD = 'C5';
 
 // ── SPEECH (browser-native synthesis only) ────────────────────────────
 // Google Translate TTS has been removed entirely. Two reasons it could
@@ -1015,14 +1021,43 @@ function _loadVoices() {
   if (!window.speechSynthesis) return;
   const vs = window.speechSynthesis.getVoices();
   if (!vs || !vs.length) return;
+
+  // WINDOWS CLIPPING FIX.
+  // getVoices() mixes two very different kinds of voice:
+  //   * local  (localService === true)  — synthesised on the device
+  //   * network(localService === false) — STREAMED from a server
+  // Chrome on Windows usually lists "Google 普通话（中国大陆）", a network
+  // voice, and picking it reintroduces exactly the streaming clip we
+  // removed when we dropped Google's TTS endpoint: playback starts
+  // before the opening audio has arrived. Windows' own Microsoft
+  // Chinese voices are local and don't clip. Android is unaffected
+  // because every voice its TTS engine exposes is on-device — which is
+  // why the clipping only ever showed up on Windows.
+  // So: always prefer a LOCAL Chinese voice; fall back to a network one
+  // only if the device has nothing else.
+  const zh      = v => /^zh/i.test(v.lang);
+  const zhCN    = v => /^zh[-_](CN|Hans|SG)/i.test(v.lang);
+  const isLocal = v => v.localService === true;
+
   _zhVoice =
-      vs.find(v => /^zh[-_]CN/i.test(v.lang))
-   || vs.find(v => /^zh[-_](SG|Hans)/i.test(v.lang))
-   || vs.find(v => /^zh/i.test(v.lang))
+      vs.find(v => zhCN(v) && isLocal(v))     // best: local Mainland Mandarin
+   || vs.find(v => zh(v)   && isLocal(v))     // any local Chinese
+   || vs.find(v => zhCN(v))                   // network fallback
+   || vs.find(v => zh(v))
    || null;
+
   _voicesLoaded = true;
-  if (!_zhVoice) console.warn('[speech] No Chinese voice installed on this device.');
+  if (_zhVoice) {
+    _zhVoiceIsNetwork = _zhVoice.localService === false;
+    if (_zhVoiceIsNetwork) {
+      console.warn('[speech] Only a network Chinese voice is available ("' + _zhVoice.name +
+                   '"); its start may clip. Installing a local Chinese voice avoids this.');
+    }
+  } else {
+    console.warn('[speech] No Chinese voice installed on this device.');
+  }
 }
+let _zhVoiceIsNetwork = false;
 if (window.speechSynthesis) {
   _loadVoices();
   window.speechSynthesis.onvoiceschanged = _loadVoices;
@@ -1107,6 +1142,17 @@ function speakChinese(text) {
     if (seq !== _speakSeq) return;
     if (!_voicesLoaded) _loadVoices();
     try {
+      // If the only Chinese voice available is a NETWORK voice, its first
+      // moments stream in and get clipped. Queueing a silent utterance
+      // immediately ahead of the real one absorbs that warm-up, so the
+      // clip lands on silence instead of on the phrase.
+      if (_zhVoiceIsNetwork) {
+        const pad = new SpeechSynthesisUtterance('\u00A0');
+        pad.volume = 0;
+        if (_zhVoice) pad.voice = _zhVoice;
+        _keepAlive(pad);
+        synth.speak(pad);
+      }
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'zh-CN';
       if (_zhVoice) u.voice = _zhVoice;
@@ -1332,7 +1378,11 @@ function renderSpeak(p) {
       </div>
       ${canMic
         ? `<button class="mic-btn" onclick="startMicSession('${zhEsc}','${pyEsc}')">🎙 Tap to Speak &amp; Record</button>
-           <div style="font-size:.76rem;color:var(--ink-faint);text-align:center;margin-top:8px">Your speech will be recognized and compared to the phrase above</div>`
+           <div style="font-size:.76rem;color:var(--ink-faint);text-align:center;margin-top:8px">Your speech will be recognized and compared to the phrase above</div>
+           <label class="rec-toggle" onclick="event.preventDefault();toggleRecordPref();">
+             <span class="rec-toggle-box ${getRecordPref()?'on':''}">${getRecordPref()?'✓':''}</span>
+             <span class="rec-toggle-label">Also save audio for playback${_isAndroid()?' <em>— on Android this usually blocks transcription</em>':''}</span>
+           </label>`
         : `<div style="font-size:.82rem;color:var(--ink-faint);text-align:center;margin:12px 0">Mic not available in this browser</div>`}
       <button class="self-report-link" onclick="showSelfReport()">Skip mic — self-report instead</button>
     </div>`;
@@ -1379,8 +1429,8 @@ function renderSpeak(p) {
         <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it again</button>
       </div>
       <div class="speak-btns">
-        <button class="speak-correct" onclick="scoreMicResult(true)">✓ I said it correctly</button>
-        <button class="speak-again" onclick="scoreMicResult(false)">↺ Needs more practice</button>
+        <button class="speak-correct" onclick="scoreMicResult(1)">✓ I said it correctly</button>
+        <button class="speak-again" onclick="scoreMicResult(0)">↺ Needs more practice</button>
       </div>
     </div>`;
   }
@@ -1407,6 +1457,8 @@ function renderSpeak(p) {
       noRecogReason = ' — error: "' + MIC.recogError + '"' + (isStandalone ? ' (running as installed app)' : '');
     } else if(MIC.recogStatus === 'idle'){
       noRecogReason = ' — recognizer never started';
+    } else if (_isAndroid() && getRecordPref()) {
+      noRecogReason = ' — audio recording is holding the microphone. Turn off "Also save audio for playback" on the previous screen and try again.';
     } else {
       noRecogReason = ' — recognizer ran (status: ' + MIC.recogStatus + ') but returned no text';
     }
@@ -1414,14 +1466,23 @@ function renderSpeak(p) {
       ? `<div class="heard-line">Heard: <span class="zh" onclick="speakChinese('${MIC.transcript.replace(/'/g,"\\'")}')">${MIC.transcript}</span></div>`
       : `<div class="heard-line faint">Nothing recognized${noRecogReason}</div>`;
 
+    // Credit carried forward = the match percentage, so continuing
+    // without a perfect score still counts proportionally toward the
+    // lesson total. "Try again" is offered at EVERY score, including
+    // 100%, so a good result can still be re-attempted.
+    const credit = r ? (r.pct / 100) : 0;
     const actionHtml = perfectMatch
       ? `<div class="feedback-bar correct" style="margin-top:12px"><span class="feedback-icon">✅</span><div><div>Great match — nicely done!</div></div></div>
-         <button class="next-btn" onclick="scoreMicResult(true)">Next →</button>`
-      : `<div style="font-size:.82rem;color:var(--ink-soft);margin:10px 0 6px;text-align:center">${goodMatch?'Pretty close — how do you feel about it?':'Not a strong match — try again or continue:'}</div>
          <div class="speak-result-btns">
-           <button class="speak-correct" onclick="scoreMicResult(true)">✓ Count it correct</button>
+           <button class="speak-correct" onclick="scoreMicResult(1)">✓ Continue (100%)</button>
            <button class="speak-again" onclick="retryMic('${zhEsc}','${pyEsc}')">↺ Try again</button>
-         </div>`;
+         </div>`
+      : `<div style="font-size:.82rem;color:var(--ink-soft);margin:10px 0 6px;text-align:center">${goodMatch?'Pretty close — retry, or continue and bank this score:':'Not a strong match — retry, or continue and bank this score:'}</div>
+         <div class="speak-result-btns">
+           <button class="speak-correct" onclick="scoreMicResult(${credit})">✓ Continue${r ? ' ('+r.pct+'%)' : ''}</button>
+           <button class="speak-again" onclick="retryMic('${zhEsc}','${pyEsc}')">↺ Try again</button>
+         </div>
+         ${r ? `<div style="font-size:.72rem;color:var(--ink-faint);text-align:center;margin-top:6px">Continuing banks ${r.pct}% credit toward your lesson score</div>` : ''}`;
 
     // Playback of what was actually recorded — restored.
     const playbackBtn = _playbackURL
@@ -1487,6 +1548,29 @@ function renderSpeak(p) {
 // coexist fine — an earlier change removed the recorder on a mistaken
 // "they fight over the microphone" theory, which lost the recording
 // feature and did not fix recognition.
+// ── PLATFORM / RECORDING PREFERENCE ───────────────────────────────────
+// Android hands microphone input to ONE consumer at a time. When
+// MediaRecorder holds the mic there, SpeechRecognition receives silence
+// and ends with an empty result — recording works, transcription never
+// arrives. Desktop Chrome's audio stack lets them share, which is why
+// the identical code transcribes fine on Windows.
+// So the recorder is opt-in per platform: off by default on Android
+// (transcription wins), on elsewhere (both work). The user can flip it.
+function _isAndroid(){ return /Android/i.test((navigator.userAgent)||''); }
+
+function getRecordPref() {
+  try {
+    const v = localStorage.getItem('hsk2_record_audio');
+    if (v === null) return !_isAndroid();     // default per platform
+    return v === '1';
+  } catch(e) { return !_isAndroid(); }
+}
+function setRecordPref(on) {
+  try { localStorage.setItem('hsk2_record_audio', on ? '1' : '0'); } catch(e) {}
+  render();
+}
+function toggleRecordPref() { setRecordPref(!getRecordPref()); }
+
 function _speechAPI(){ return window.SpeechRecognition || window.webkitSpeechRecognition; }
 function _micSpeechOK(){ return !!_speechAPI(); }
 function _micAudioOK(){
@@ -1517,8 +1601,11 @@ async function startMicSession(zhEsc, pyEsc) {
   }
 
   // ── 1. Microphone stream, used for the playback recording ──
+  // Skipped entirely when audio recording is disabled, so that on
+  // Android nothing competes with SpeechRecognition for the mic.
   _micStream = null;
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  const wantRecording = getRecordPref();
+  if (wantRecording && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
       _micStream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
     } catch(e) {
@@ -1535,7 +1622,7 @@ async function startMicSession(zhEsc, pyEsc) {
 
   // ── 2. Recorder (best-effort; never blocks recognition) ──
   _recordedChunks = []; _playbackURL = null; _mediaRecorder = null;
-  if (_micStream && typeof MediaRecorder !== 'undefined') {
+  if (wantRecording && _micStream && typeof MediaRecorder !== 'undefined') {
     try {
       const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg','']
         .find(m => !m || MediaRecorder.isTypeSupported(m)) || '';
@@ -1673,8 +1760,17 @@ function resetMic() {
          recogStatus:'idle', recogError:'', error:''};
 }
 
-function scoreMicResult(correct) {
-  S.answered=true; S.lastCorrect=correct; S.scoredTotal++; if(correct) S.correct++;
+// Accepts either a boolean (self-report) or a 0..1 fraction (partial
+// credit from a transcription match). Partial credit means continuing
+// without a perfect match still contributes proportionally to the
+// lesson score instead of counting as a plain miss.
+function scoreMicResult(credit) {
+  const frac = (credit === true) ? 1 : (credit === false) ? 0 : Math.max(0, Math.min(1, Number(credit) || 0));
+  S.answered = true;
+  S.lastCorrect = frac >= 0.999;
+  S.lastCredit = frac;
+  S.scoredTotal++;
+  S.correct += frac;
   resetMic();
   commitState(); render();
 }
@@ -1738,7 +1834,7 @@ let S = {
 // ── PROMPT STATE SNAPSHOT ────────────────────────────────────────────
 function snapshotState() {
   return {
-    answered: S.answered, lastCorrect: S.lastCorrect,
+    answered: S.answered, lastCorrect: S.lastCorrect, lastCredit: S.lastCredit,
     selectedOpt: S.selectedOpt,
     posSelected: S.posSelected,
     multiHeld: S.multiHeld, multiAssigned: JSON.parse(JSON.stringify(S.multiAssigned)),
@@ -1749,7 +1845,7 @@ function snapshotState() {
 }
 function restoreState(snap) {
   if (!snap) return;
-  S.answered = snap.answered; S.lastCorrect = snap.lastCorrect;
+  S.answered = snap.answered; S.lastCorrect = snap.lastCorrect; S.lastCredit = snap.lastCredit;
   S.selectedOpt = snap.selectedOpt;
   S.posSelected = snap.posSelected;
   S.multiHeld = snap.multiHeld; S.multiAssigned = JSON.parse(JSON.stringify(snap.multiAssigned));
@@ -2082,11 +2178,11 @@ function renderComplete() {
     <div class="complete-title">${grade}</div>
     <div class="complete-sub">Lesson ${L.id}: ${L.title}</div>
     <div class="score-big">${pct}<span style="font-size:2rem">%</span></div>
-    <div class="score-label">${S.correct} correct out of ${S.scoredTotal} prompts</div>
+    <div class="score-label">${(Math.round(S.correct*10)/10)} of ${S.scoredTotal} prompts (partial credit counts)</div>
     ${isNew?'<div class="high-score-badge">⭐ New High Score!</div>':`<div style="font-size:.8rem;color:var(--ink-faint);margin-top:4px">Best: ${hs}%</div>`}
     <div class="stats-row">
-      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${S.correct}</div><div class="stat-label">Correct</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:var(--red)">${S.scoredTotal-S.correct}</div><div class="stat-label">Incorrect</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--green)">${Math.round(S.correct*10)/10}</div><div class="stat-label">Earned</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--red)">${Math.round((S.scoredTotal-S.correct)*10)/10}</div><div class="stat-label">Lost</div></div>
       <div class="stat-box"><div class="stat-num">${pct}%</div><div class="stat-label">Score</div></div>
     </div>
   </div>
