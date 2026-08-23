@@ -993,7 +993,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'C2';
+const APP_BUILD = 'C3';
 
 // ── SPEECH (browser-native synthesis only) ────────────────────────────
 // Google Translate TTS has been removed entirely. Two reasons it could
@@ -1126,6 +1126,12 @@ function hasChineseVoice() { return !!_zhVoice; }
 let MIC = { phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:'' };
 let _recogFinalized = false;
 let _micRecognizer=null, _pendingPy='';
+// Recording (for "play back my recording"). Restored: an earlier change
+// removed these on the theory that MediaRecorder and SpeechRecognition
+// couldn't share the microphone. That theory was wrong — they ran
+// together fine before — and removing them cost the recording feature
+// without fixing recognition.
+let _micStream=null, _mediaRecorder=null, _recordedChunks=[], _playbackURL=null;
 
 // (_micSpeechOK / _micAudioOK are defined in the mic section below —
 // the old duplicates that lived here required getUserMedia+AudioContext,
@@ -1144,6 +1150,29 @@ function parsePinyinSyllables(py) {
     }
     return {syllable:w, tone};
   });
+}
+
+// ── RECORDING PLAYBACK ──────────────────────────────────────────────────
+let _playbackCooldown = false;
+function playbackRecording() {
+  if (!_playbackURL) return;
+  if (_playbackCooldown) return;          // ignore a double-fire tap
+  _playbackCooldown = true;
+  setTimeout(() => { _playbackCooldown = false; }, 400);
+
+  const btn = document.getElementById('playback-btn');
+  const existing = document.getElementById('playback-audio');
+  if (existing) {
+    if (existing.paused) existing.play();
+    else { existing.pause(); existing.currentTime = 0; }
+    return;
+  }
+  const audio = new Audio(_playbackURL);
+  audio.id = 'playback-audio';
+  if (btn) { btn.classList.add('playing'); btn.textContent = '⏹ Stop playback'; }
+  audio.onended = () => { if (btn) { btn.classList.remove('playing'); btn.innerHTML = '🎧 Play back my recording'; } };
+  audio.play().catch(()=>{});
+  document.body.appendChild(audio);
 }
 
 // ── ALIGNMENT-BASED TRANSCRIPT COMPARISON ────────────────────────────────
@@ -1394,6 +1423,11 @@ function renderSpeak(p) {
            <button class="speak-again" onclick="retryMic('${zhEsc}','${pyEsc}')">↺ Try again</button>
          </div>`;
 
+    // Playback of what was actually recorded — restored.
+    const playbackBtn = _playbackURL
+      ? `<button class="playback-btn" id="playback-btn" onclick="playbackRecording()">🎧 Play back my recording</button>`
+      : '';
+
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Result</div>
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
@@ -1401,6 +1435,7 @@ function renderSpeak(p) {
         <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear target again</button>
       </div>
       ${heardLine}
+      ${playbackBtn}
       ${MIC.transcript ? renderTranscriptCompare(p.zh, MIC.transcript) : ''}
       ${actionHtml}
     </div>`;
@@ -1446,21 +1481,17 @@ function renderSpeak(p) {
 }
 
 // ── MIC SESSION CONTROL ────────────────────────────────────────────────
-// Rewritten to fix the root cause of "recognizer ran but returned no
-// text": the previous version called getUserMedia() and started a
-// MediaRecorder, THEN started SpeechRecognition. That put two separate
-// consumers on one microphone. MediaRecorder won the stream (which is
-// why the recording always worked and could be played back), and
-// SpeechRecognition received nothing — so it ended cleanly with an empty
-// result every time.
-//
-// SpeechRecognition opens and manages its own microphone internally, so
-// it must be the ONLY consumer. The recorder-based "play back my
-// recording" feature has been removed; it was what broke recognition,
-// and recognition is the feature that actually matters here.
+// Restored to the architecture that actually worked: getUserMedia +
+// MediaRecorder (so the recording can be played back) running ALONGSIDE
+// SpeechRecognition (which opens its own capture internally). These
+// coexist fine — an earlier change removed the recorder on a mistaken
+// "they fight over the microphone" theory, which lost the recording
+// feature and did not fix recognition.
 function _speechAPI(){ return window.SpeechRecognition || window.webkitSpeechRecognition; }
 function _micSpeechOK(){ return !!_speechAPI(); }
-function _micAudioOK(){ return !!_speechAPI(); }
+function _micAudioOK(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !!_speechAPI();
+}
 
 function _setRecogStatus(txt, isWarn) {
   const el = document.getElementById('recog-status');
@@ -1471,12 +1502,9 @@ function _setInterimText(txt) {
   if (el) el.textContent = txt ? ('Hearing: ' + txt) : 'Listening…';
 }
 
-function startMicSession(zhEsc, pyEsc) {
-  // The lesson auto-speaks the phrase when the prompt opens. If that
-  // audio is still playing (or queued) when recognition starts, Android
-  // hands the audio route to synthesis and the recognizer receives
-  // nothing — it then ends cleanly with an empty result. Silence TTS
-  // first, and give the route a moment to release.
+async function startMicSession(zhEsc, pyEsc) {
+  // The prompt auto-speaks when it opens; make sure that audio is done
+  // before we start capturing.
   stopSpeaking();
 
   _pendingPy = pyEsc;
@@ -1487,31 +1515,67 @@ function startMicSession(zhEsc, pyEsc) {
   if (!window.isSecureContext) {
     MIC = {...MIC, phase:'error', errorType:'insecure'}; render(); return;
   }
-  const SR = _speechAPI();
-  if (!SR) {
-    MIC = {...MIC, phase:'error', errorType:'unsupported'}; render(); return;
+
+  // ── 1. Microphone stream, used for the playback recording ──
+  _micStream = null;
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      _micStream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
+    } catch(e) {
+      const n = e.name || '';
+      let errorType = 'unknown';
+      if (n==='NotAllowedError'||n==='PermissionDeniedError') errorType='denied';
+      else if (n==='NotFoundError'||n==='DevicesNotFoundError') errorType='notfound';
+      else if (n==='NotReadableError'||n==='TrackStartError') errorType='inuse';
+      else if (n==='SecurityError') errorType='insecure';
+      MIC = {...MIC, phase:'error', errorType};
+      render(); return;
+    }
   }
 
+  // ── 2. Recorder (best-effort; never blocks recognition) ──
+  _recordedChunks = []; _playbackURL = null; _mediaRecorder = null;
+  if (_micStream && typeof MediaRecorder !== 'undefined') {
+    try {
+      const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg','']
+        .find(m => !m || MediaRecorder.isTypeSupported(m)) || '';
+      _mediaRecorder = new MediaRecorder(_micStream, mime ? {mimeType:mime} : {});
+      _mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) _recordedChunks.push(e.data); };
+      _mediaRecorder.start(200);
+    } catch(e) { _mediaRecorder = null; }
+  }
+
+  // ── 3. Speech recognition ──
+  const SR = _speechAPI();
+  MIC.recogSupported = !!SR;
   _recogFinalized = false;
+  MIC.phase = 'listening';
+  render();
+
+  if (!SR) {
+    MIC.recogStatus = 'unsupported';
+    _setRecogStatus('Speech recognition unavailable — recording only', true);
+    setTimeout(() => { if (MIC.phase === 'listening') _finalizeSession(); }, 6000);
+    return;
+  }
+
   const rec = new SR();
   _micRecognizer = rec;
   rec.lang = 'zh-CN';
   rec.continuous = false;      // one utterance, graded once
-  rec.interimResults = true;   // live text while speaking
+  rec.interimResults = true;   // live text + a fallback if no final arrives
   rec.maxAlternatives = 1;
 
-  // Status/interim updates write directly to the DOM — a full render()
-  // would rebuild the card mid-recording and cause visible jitter.
   rec.onstart = () => { MIC.recogStatus='listening'; _setRecogStatus('Listening — speak now', false); };
   rec.onspeechstart = () => { MIC.recogStatus='speech'; _setRecogStatus('Speech detected', false); };
 
   rec.onresult = (e) => {
     let fin = '', inter = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    for (let i = 0; i < e.results.length; i++) {
       const t = e.results[i][0].transcript || '';
       if (e.results[i].isFinal) fin += t; else inter += t;
     }
-    if (fin) MIC.transcript = (MIC.transcript || '') + fin;
+    if (fin) MIC.transcript = fin;
     if (inter) MIC.lastInterim = inter;
     MIC.interim = inter;
     _setInterimText(MIC.transcript || inter);
@@ -1520,73 +1584,77 @@ function startMicSession(zhEsc, pyEsc) {
   rec.onerror = (e) => {
     MIC.recogError = e.error || 'unknown';
     MIC.recogStatus = 'error';
-    console.warn('[speech] error:', e.error, e.message || '');
+    console.warn('[speech] error:', e.error);
     _setRecogStatus('Error: ' + MIC.recogError, true);
-    // 'no-speech'/'aborted' still reach onend, which finalizes.
   };
 
-  rec.onend = () => { _finalizeRecognition(); };
+  rec.onend = () => { _finalizeSession(); };
 
-  MIC.recogSupported = true;
-  MIC.phase = 'listening';
-  render();
+  try {
+    rec.start();
+  } catch (err) {
+    MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
+    console.warn('[speech] start() threw:', err);
+    _setRecogStatus('Could not start recognizer', true);
+    // Recognition failed, but the recorder may still be running — let the
+    // user finish and at least keep their recording.
+  }
 
-  // Small delay lets the audio route settle after stopSpeaking().
-  setTimeout(() => {
-    if (MIC.phase !== 'listening') return;
-    try {
-      rec.start();
-    } catch (err) {
-      MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
-      MIC.recogStatus = 'error';
-      console.warn('[speech] start() threw:', err);
-      _finalizeRecognition();
-    }
-  }, 250);
-
-  // Safety cap so a stuck session can't hang forever.
-  setTimeout(() => { if (MIC.phase === 'listening') manualStopMic(); }, 12000);
-  // Hard backstop: if onend never fires (observed on some Android
-  // builds), finalize anyway so the results screen always appears.
-  setTimeout(() => { if (MIC.phase === 'listening') _finalizeRecognition(); }, 15000);
+  // Safety caps.
+  setTimeout(() => { if (MIC.phase === 'listening' && _micRecognizer) { try { _micRecognizer.stop(); } catch(e) {} } }, 10000);
+  setTimeout(() => { if (MIC.phase === 'listening') _finalizeSession(); }, 13000);
 }
 
-// "Done Speaking". stop() asks the recognizer to finalize what it has;
-// onend then fires and _finalizeRecognition runs. If no final result
-// ever arrives, the last interim text is used instead of discarding
-// everything that was heard.
+// "Done Speaking"
 function manualStopMic(zhEsc, pyEsc) {
   if (_micRecognizer) {
     try { _micRecognizer.stop(); }
-    catch (e) { _finalizeRecognition(); return; }
-    // stop() should trigger onend; if it doesn't within 1.5s, finalize
-    // ourselves rather than leaving the user stuck on the record screen.
-    setTimeout(() => { if (!_recogFinalized) _finalizeRecognition(); }, 1500);
+    catch(e) { _finalizeSession(); return; }
+    // stop() should trigger onend; finalize ourselves if it doesn't.
+    setTimeout(() => { if (!_recogFinalized) _finalizeSession(); }, 1500);
   } else {
-    _finalizeRecognition();
+    _finalizeSession();
   }
 }
 
-function _finalizeRecognition() {
-  if (_recogFinalized) return;   // onend can fire more than once
+// Single exit point: stops the recorder, builds the playback clip, and
+// moves to the results screen. Runs at most once per session.
+function _finalizeSession() {
+  if (_recogFinalized) return;
   _recogFinalized = true;
+
+  // If no final transcript arrived, keep whatever interim text we saw
+  // rather than discarding everything the recognizer heard.
   if (!MIC.transcript && MIC.lastInterim) MIC.transcript = MIC.lastInterim;
   _micRecognizer = null;
-  MIC.phase = 'done';
-  render();
+
+  const finish = () => {
+    if (_micStream) { _micStream.getTracks().forEach(t => t.stop()); _micStream = null; }
+    _mediaRecorder = null;
+    MIC.phase = 'done';
+    render();
+  };
+
+  if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
+    const mr = _mediaRecorder;
+    mr.onstop = () => {
+      try {
+        const blob = new Blob(_recordedChunks, {type: mr.mimeType || 'audio/webm'});
+        if (blob.size > 1000) _playbackURL = URL.createObjectURL(blob);
+      } catch(e) {}
+      finish();
+    };
+    try { mr.stop(); } catch(e) { finish(); }
+  } else {
+    finish();
+  }
 }
 
-function retryMic(zhEsc, pyEsc) {
-  resetMic();
-  startMicSession(zhEsc, pyEsc);
-}
+// Back-compat alias (older call sites referenced this name).
+function _finalizeRecognition() { _finalizeSession(); }
 
-function showSelfReport() {
-  resetMic();
-  MIC.phase = 'self-report';
-  render();
-}
-
+function retryMic(zhEsc, pyEsc) { resetMic(); startMicSession(zhEsc, pyEsc); }
+function showSelfReport() { resetMic(); MIC.phase = 'self-report'; render(); }
 function resetMicAndRender() { resetMic(); render(); }
 
 function resetMic() {
@@ -1594,6 +1662,12 @@ function resetMic() {
     try { _micRecognizer.onend = null; _micRecognizer.abort(); } catch(e) {}
     _micRecognizer = null;
   }
+  if (_mediaRecorder && _mediaRecorder.state !== 'inactive') { try { _mediaRecorder.stop(); } catch(e) {} }
+  _mediaRecorder = null; _recordedChunks = [];
+  if (_micStream) { _micStream.getTracks().forEach(t => t.stop()); _micStream = null; }
+  if (_playbackURL) { URL.revokeObjectURL(_playbackURL); _playbackURL = null; }
+  const old = document.getElementById('playback-audio');
+  if (old) { old.pause(); old.remove(); }
   _recogFinalized = true;
   MIC = {phase:'idle', transcript:'', interim:'', lastInterim:'',
          recogStatus:'idle', recogError:'', error:''};
