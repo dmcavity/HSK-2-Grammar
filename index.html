@@ -993,102 +993,87 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'B8';
+const APP_BUILD = 'C1';
 
-// ── TTS (Google Translate neural voice + browser fallback) ──────────
-// FIX: reuse ONE persistent Audio element for every play, instead of
-// creating a fresh Audio() each call. Mobile browsers pay a "cold audio
-// route" warm-up penalty (eating the first fraction-of-a-second of
-// content) whenever a NEW media element starts playing for the first
-// time — a one-off "unlock" element (the previous approach) never
-// transfers that warm state to later, different Audio objects. Keeping
-// the SAME element alive and just swapping its .src keeps the route warm
-// for every subsequent play.
-let _ttsAudio = null;
-let _audioUnlocked = false;
+// ── SPEECH (browser-native synthesis only) ────────────────────────────
+// Google Translate TTS has been removed entirely. Two reasons it could
+// never be made reliable here:
+//   1. Its endpoint sends no CORS headers, so it cannot be fetched and
+//      fully buffered before playing — the only option is streaming it
+//      into an <audio> element, and playback then begins before the
+//      opening audio has arrived. That IS the clipping.
+//   2. Any "if the network path fails, use the browser voice" fallback
+//      creates a second code path that can fire alongside the first —
+//      the double playback.
+// Browser synthesis is local: nothing to buffer, nothing to race, and
+// exactly one way for audio to be produced.
 
-function _getTTSAudio() {
-  if (!_ttsAudio) { _ttsAudio = new Audio(); _ttsAudio.preload = 'auto'; }
-  return _ttsAudio;
-}
+let _zhVoice = null;
+let _voicesLoaded = false;
 
-function _unlockAudioOnce() {
-  if (_audioUnlocked) return;
-  _audioUnlocked = true;
-  const a = _getTTSAudio();
-  try {
-    a.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAA=";
-    a.play().catch(()=>{});
-  } catch(e) {}
-}
-document.addEventListener('touchstart', _unlockAudioOnce, {once:true, passive:true});
-document.addEventListener('click', _unlockAudioOnce, {once:true});
-document.addEventListener('keydown', _unlockAudioOnce, {once:true});
-
-let _ttsToken = 0;
-let _ttsFallbackTimer = null;
-function speakChinese(text) {
-  if (!text) return;
-  _unlockAudioOnce();
-  // Always silence any in-flight browser-TTS utterance from a previous
-  // call before starting a new one.
-  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {}
-  try {
-    const audio = _getTTSAudio();
-    audio.pause();
-
-    if (_ttsFallbackTimer) { clearTimeout(_ttsFallbackTimer); _ttsFallbackTimer = null; }
-    const myToken = ++_ttsToken;
-
-    const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(text);
-    let played = false;
-    const doPlay = () => {
-      if (played || myToken !== _ttsToken) return;
-      played = true;
-      audio.oncanplay = null;
-      audio.play().catch(err => {
-        // THE DUPLICATE-AUDIO BUG: this catch previously fired
-        // _browserSpeak() on ANY rejection. But Chrome rejects with
-        // AbortError whenever a play() is interrupted by a new src or a
-        // pause() — which happens routinely here — even though the audio
-        // did start. Result: Google TTS played (clipped by the
-        // interruption) AND the browser voice then spoke the whole
-        // phrase = the "plays twice, first one clipped" symptom.
-        // Only fall back on genuine playback failures, and only if this
-        // call is still the current one.
-        if (err && err.name === 'AbortError') return;
-        if (myToken !== _ttsToken) return;
-        _browserSpeak(text, myToken);
-      });
-    };
-    audio.oncanplay = doPlay;
-    audio.onerror = () => { if(!played && myToken === _ttsToken) _browserSpeak(text, myToken); };
-    audio.src = url;
-    audio.load();
-    _ttsFallbackTimer = setTimeout(() => { doPlay(); }, 2500);
-  } catch(e) { _browserSpeak(text, _ttsToken); }
-}
-function _browserSpeak(text, token) {
+function _loadVoices() {
   if (!window.speechSynthesis) return;
-  // Ignore late fallbacks belonging to a superseded call.
-  if (typeof token === 'number' && token !== _ttsToken) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN'; u.rate = 0.85;
-  window.speechSynthesis.speak(u);
+  const vs = window.speechSynthesis.getVoices();
+  if (!vs || !vs.length) return;          // not populated yet
+  _zhVoice =
+      vs.find(v => /^zh[-_]CN/i.test(v.lang))            // Mainland Mandarin
+   || vs.find(v => /^zh[-_](SG|Hans)/i.test(v.lang))     // other Simplified
+   || vs.find(v => /^zh/i.test(v.lang))                  // any Chinese
+   || null;
+  _voicesLoaded = true;
+  if (!_zhVoice) console.warn('[speech] No Chinese voice installed on this device.');
+}
+if (window.speechSynthesis) {
+  _loadVoices();                                   // may be empty on first call
+  window.speechSynthesis.onvoiceschanged = _loadVoices;   // fires when ready
+}
+
+function hasChineseVoice() { return !!_zhVoice; }
+
+let _speakSeq = 0;
+let _lastSpeakText = '';
+let _lastSpeakAt = 0;
+
+function speakChinese(text) {
+  if (!text || !window.speechSynthesis) return;
+
+  // Collapse a repeat request for the SAME phrase within 400ms. Guards
+  // against a stray duplicate event (mobile touch+click) or two code
+  // paths both asking for the same audio — either would otherwise be
+  // heard as the phrase playing twice.
+  const now = Date.now();
+  if (text === _lastSpeakText && now - _lastSpeakAt < 400) return;
+  _lastSpeakText = text;
+  _lastSpeakAt = now;
+
+  const seq = ++_speakSeq;
+  try { window.speechSynthesis.cancel(); } catch(e) {}
+
+  // Chrome silently drops an utterance when speak() is called in the
+  // same tick as cancel(); a short gap makes it reliable.
+  setTimeout(() => {
+    if (seq !== _speakSeq) return;        // superseded by a newer request
+    if (!_voicesLoaded) _loadVoices();    // late-populating voice list
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN';
+      if (_zhVoice) u.voice = _zhVoice;
+      u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+    } catch(e) { console.warn('[speech] speak failed:', e); }
+  }, 70);
 }
 
 
 // ── MIC / SPEECH GLOBALS ─────────────────────────────────────────────
 // These live outside S (non-serialisable — AudioContext, MediaStream, RAF)
 let MIC = { phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:'' };
-let _micStream=null;
-let _pitchRAF=null, _recordStart=0;
+let _recogFinalized = false;
 let _micRecognizer=null, _pendingPy='';
-let _mediaRecorder=null, _recordedChunks=[], _playbackURL=null;
 
-function _micSpeechOK(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
-function _micAudioOK(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&(window.AudioContext||window.webkitAudioContext)); }
+// (_micSpeechOK / _micAudioOK are defined in the mic section below —
+// the old duplicates that lived here required getUserMedia+AudioContext,
+// which are no longer used at all.)
 
 // ── PINYIN PARSING (kept: used for tone-mark display only) ────────────
 function parsePinyinSyllables(py) {
@@ -1103,67 +1088,6 @@ function parsePinyinSyllables(py) {
     }
     return {syllable:w, tone};
   });
-}
-
-// ── PLAYBACK ────────────────────────────────────────────────────────────
-// (Removed a duplicate earlier copy of this function that was leftover
-// from an earlier patch — dead code, but cleaned up for correctness.) (tone-stripping + phonetic similarity) ─────────────
-const TONE_MAP = {
-  'ā':['a',1],'á':['a',2],'ǎ':['a',3],'à':['a',4],
-  'ē':['e',1],'é':['e',2],'ě':['e',3],'è':['e',4],
-  'ī':['i',1],'í':['i',2],'ǐ':['i',3],'ì':['i',4],
-  'ō':['o',1],'ó':['o',2],'ǒ':['o',3],'ò':['o',4],
-  'ū':['u',1],'ú':['u',2],'ǔ':['u',3],'ù':['u',4],
-  'ǖ':['ü',1],'ǘ':['ü',2],'ǚ':['ü',3],'ǜ':['ü',4],
-};
-function analyzePinyin(py) {
-  let base='', tone=0;
-  for(const ch of py){ if(TONE_MAP[ch]){base+=TONE_MAP[ch][0]; tone=TONE_MAP[ch][1];} else base+=ch; }
-  return {base, tone};
-}
-const PY_INITIALS=['zh','ch','sh','b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s','y','w'];
-function parseInitialFinal(base){
-  for(const ini of PY_INITIALS) if(base.startsWith(ini)) return {initial:ini, final:base.slice(ini.length)};
-  return {initial:'', final:base};
-}
-const CONFUSABLE_INITIALS=[['zh','z'],['ch','c'],['sh','s'],['n','l'],['f','h'],['r','l']];
-function initialsConfusable(a,b){ if(a===b) return true; return CONFUSABLE_INITIALS.some(pr=>pr.includes(a)&&pr.includes(b)); }
-function editDist1(a,b){
-  if(a===b) return true;
-  if(Math.abs(a.length-b.length)>1) return false;
-  if(a.length===b.length){ let d=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) d++; return d<=1; }
-  const [lo,sh]=a.length>b.length?[a,b]:[b,a];
-  for(let i=0;i<lo.length;i++) if(lo.slice(0,i)+lo.slice(i+1)===sh) return true;
-  return false;
-}
-function soundsSimilar(baseA,baseB){
-  if(baseA===baseB) return true;
-  const {initial:iA,final:fA}=parseInitialFinal(baseA), {initial:iB,final:fB}=parseInitialFinal(baseB);
-  if(iA===iB && editDist1(fA,fB)) return true;
-  if(fA===fB && initialsConfusable(iA,iB)) return true;
-  return false;
-}
-
-// ── PLAYBACK ────────────────────────────────────────────────────────────
-// ── PLAYBACK ────────────────────────────────────────────────────────────
-let _playbackCooldown = false;
-function playbackRecording() {
-  if(!_playbackURL) return;
-  // Defensive guard against a double-fire (mobile touch+click can
-  // sometimes register as two events for one tap).
-  if(_playbackCooldown) return;
-  _playbackCooldown = true;
-  setTimeout(()=>{ _playbackCooldown = false; }, 400);
-
-  const btn=document.getElementById('playback-btn');
-  const existingAudio=document.getElementById('playback-audio');
-  if(existingAudio){ existingAudio.paused ? existingAudio.play() : (existingAudio.pause(),existingAudio.currentTime=0); return; }
-  const audio=new Audio(_playbackURL);
-  audio.id='playback-audio';
-  if(btn){ btn.classList.add('playing'); btn.textContent='⏹ Stop playback'; }
-  audio.play();
-  audio.onended=()=>{ if(btn){ btn.classList.remove('playing'); btn.innerHTML='🎧 Play back my recording'; } };
-  document.body.appendChild(audio);
 }
 
 // ── ALIGNMENT-BASED TRANSCRIPT COMPARISON ────────────────────────────────
@@ -1297,7 +1221,7 @@ function renderSpeak(p) {
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
         <div class="speak-py">${p.py}</div><div class="speak-en">${p.en}</div>
         <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it first</button>
-        <div class="audio-hint">Click any Chinese text to hear pronunciation</div>
+        <div class="audio-hint">${hasChineseVoice() ? 'Click any Chinese text to hear pronunciation' : '⚠️ No Chinese voice installed on this device — audio will be silent. On Android: Settings → Accessibility → Text-to-speech. On Windows: Settings → Time &amp; Language → Speech → Add voices → Chinese.'}</div>
       </div>
       ${canMic
         ? `<button class="mic-btn" onclick="startMicSession('${zhEsc}','${pyEsc}')">🎙 Tap to Speak &amp; Record</button>
@@ -1360,10 +1284,6 @@ function renderSpeak(p) {
     const perfectMatch = r && r.pct>=95;
     const goodMatch    = r && r.pct>=65;
 
-    const playbackBtn=_playbackURL
-      ? `<button class="playback-btn" id="playback-btn" onclick="playbackRecording()">🎧 Play back my recording</button>`
-      : '';
-
     // Speech recognition genuinely isn't producing a transcript yet even
     // after switching to continuous:false, so this shows exactly which
     // failure mode is occurring instead of guessing again — a single
@@ -1403,7 +1323,6 @@ function renderSpeak(p) {
         <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear target again</button>
       </div>
       ${heardLine}
-      ${playbackBtn}
       ${MIC.transcript ? renderTranscriptCompare(p.zh, MIC.transcript) : ''}
       ${actionHtml}
     </div>`;
@@ -1426,6 +1345,10 @@ function renderSpeak(p) {
       notfound: { icon:'🎤', title:'No microphone found', body:`<p>This device doesn't appear to have a microphone, or it isn't connected.</p>`, btn:null },
       inuse: { icon:'⚠️', title:'Microphone is in use', body:`<p>Another app is using the microphone. Close any apps using audio and try again.</p>`, btn:'Try Again' },
       insecure: { icon:'🔐', title:'Microphone requires HTTPS', body:`<p>Microphone access only works over <strong>HTTPS</strong>.</p><p style="margin-top:6px">Opening the file directly (<code>file://</code>) won't work — host on GitHub Pages instead.</p>`, btn:null },
+      unsupported: { icon:'🎙', title:'Speech recognition not available',
+        body:`<p>This browser doesn't provide the Web Speech API needed to recognize what you say.</p>
+          <p style="margin-top:6px">It works in <strong>Chrome</strong> and <strong>Edge</strong> on desktop and Android. Safari and Firefox don't support it. If you're using an installed home-screen app, try opening the same link in a normal Chrome tab instead.</p>
+          <p style="margin-top:6px">You can still practise using self-report below.</p>`, btn:null },
       unknown: { icon:'❓', title:'Microphone unavailable', body:`<p>Something went wrong. Check Chrome has mic permission in Android Settings → Apps → Chrome → Permissions.</p>`, btn:'Try Again' },
     };
     const m = msgs[et] || msgs.unknown;
@@ -1445,161 +1368,118 @@ function renderSpeak(p) {
 }
 
 // ── MIC SESSION CONTROL ────────────────────────────────────────────────
-// Simplified: only getUserMedia (for MediaRecorder playback) + speech
-// recognition. The old AudioContext/AnalyserNode pipeline existed solely
-// to drive the volume-meter/waveform visuals, which were removed for
-// being distracting — dropping it also means one fewer simultaneous
-// consumer of the microphone stream.
-async function startMicSession(zhEsc, pyEsc) {
+// Rewritten to fix the root cause of "recognizer ran but returned no
+// text": the previous version called getUserMedia() and started a
+// MediaRecorder, THEN started SpeechRecognition. That put two separate
+// consumers on one microphone. MediaRecorder won the stream (which is
+// why the recording always worked and could be played back), and
+// SpeechRecognition received nothing — so it ended cleanly with an empty
+// result every time.
+//
+// SpeechRecognition opens and manages its own microphone internally, so
+// it must be the ONLY consumer. The recorder-based "play back my
+// recording" feature has been removed; it was what broke recognition,
+// and recognition is the feature that actually matters here.
+function _speechAPI(){ return window.SpeechRecognition || window.webkitSpeechRecognition; }
+function _micSpeechOK(){ return !!_speechAPI(); }
+function _micAudioOK(){ return !!_speechAPI(); }
+
+function _setRecogStatus(txt, isWarn) {
+  const el = document.getElementById('recog-status');
+  if (el) { el.textContent = txt; el.className = 'recog-status-line' + (isWarn ? ' warn' : ''); }
+}
+function _setInterimText(txt) {
+  const el = document.getElementById('interim-text');
+  if (el) el.textContent = txt ? ('Hearing: ' + txt) : 'Listening…';
+}
+
+function startMicSession(zhEsc, pyEsc) {
   _pendingPy = pyEsc;
-  MIC = {phase:'requesting', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:''};
+  MIC = {phase:'requesting', transcript:'', interim:'', lastInterim:'',
+         recogStatus:'idle', recogError:'', error:''};
   render();
 
-  // 1. Secure context check (getUserMedia requires HTTPS or localhost)
-  if(!window.isSecureContext){
-    MIC = {...MIC, phase:'error', errorType:'insecure'};
-    render(); return;
+  if (!window.isSecureContext) {
+    MIC = {...MIC, phase:'error', errorType:'insecure'}; render(); return;
+  }
+  const SR = _speechAPI();
+  if (!SR) {
+    MIC = {...MIC, phase:'error', errorType:'unsupported'}; render(); return;
   }
 
-  // 1b. Microphone
-  try {
-    _micStream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  } catch(e) {
-    const t = e.name || e.constructor?.name || '';
-    let errorType = 'unknown';
-    if(t==='NotAllowedError'||t==='PermissionDeniedError') errorType='denied';
-    else if(t==='NotFoundError'||t==='DevicesNotFoundError') errorType='notfound';
-    else if(t==='NotReadableError'||t==='TrackStartError') errorType='inuse';
-    else if(t==='SecurityError') errorType='insecure';
-    MIC = {...MIC, phase:'error', errorType};
-    render(); return;
-  }
+  _recogFinalized = false;
+  const rec = new SR();
+  _micRecognizer = rec;
+  rec.lang = 'zh-CN';
+  rec.continuous = false;      // one utterance, graded once
+  rec.interimResults = true;   // live text while speaking
+  rec.maxAlternatives = 1;
 
-  // MediaRecorder for playback
-  _recordedChunks=[]; _playbackURL=null;
-  try {
-    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg',''].find(m=>!m||MediaRecorder.isTypeSupported(m))||'';
-    _mediaRecorder=new MediaRecorder(_micStream, mime?{mimeType:mime}:{});
-    _mediaRecorder.ondataavailable=e=>{ if(e.data&&e.data.size>0) _recordedChunks.push(e.data); };
-    _mediaRecorder.start(200);
-  } catch(e){ _mediaRecorder=null; }
+  // Status/interim updates write directly to the DOM — a full render()
+  // would rebuild the card mid-recording and cause visible jitter.
+  rec.onstart = () => { MIC.recogStatus='listening'; _setRecogStatus('Listening — speak now', false); };
+  rec.onspeechstart = () => { MIC.recogStatus='speech'; _setRecogStatus('Speech detected', false); };
 
-  _recordStart=Date.now();
-  MIC.phase='listening'; render();
-
-  // Speech recognition — every lifecycle event surfaced (not swallowed),
-  // interim results enabled so you see live text as you speak.
-  MIC.recogSupported = _micSpeechOK();
-  if(MIC.recogSupported){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    _micRecognizer=new SR();
-    _micRecognizer.lang='zh-CN';
-    // continuous:false is the reliable choice here — we want ONE phrase,
-    // graded once. continuous:true has known flakiness on Android Chrome:
-    // interim results can keep streaming but never get finalized when
-    // .stop() is called, so the transcript silently stays empty even
-    // though speech was clearly heard. continuous:false lets the
-    // recognizer use its own built-in silence-detection to end the
-    // utterance and reliably fire a final result before onend.
-    _micRecognizer.continuous=false;
-    _micRecognizer.interimResults=true;
-    _micRecognizer.maxAlternatives=1;
-    // Status updates write directly to the DOM instead of calling
-    // render() — a full re-render swaps out the whole card (including
-    // the pulsing mic element), which is visible as a jump/flash. These
-    // fire at unpredictable moments while you're speaking, so none of
-    // them may trigger a rebuild.
-    const _setRecogStatus = (txt, isWarn) => {
-      const el = document.getElementById('recog-status');
-      if(el){ el.textContent = txt; el.className = 'recog-status-line' + (isWarn ? ' warn' : ''); }
-    };
-    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; _setRecogStatus('Recognizer active', false); };
-    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; _setRecogStatus('Speech detected', false); };
-    _micRecognizer.onresult=e=>{
-      let finalTxt='', interimTxt='';
-      for(let i=0;i<e.results.length;i++){
-        const txt=e.results[i][0].transcript||'';
-        if(e.results[i].isFinal) finalTxt+=txt; else interimTxt+=txt;
-      }
-      if(finalTxt) MIC.transcript=(MIC.transcript||'')+finalTxt;
-      MIC.interim=interimTxt;
-      // Keep the latest interim text as a safety net. Chrome's stop()
-      // discards pending interim results WITHOUT finalizing them, so if
-      // the user taps "Done Speaking" mid-utterance, onresult may never
-      // deliver a final transcript and everything heard would be thrown
-      // away ("recognizer ran but returned no text"). Retaining the last
-      // interim lets us fall back to it rather than losing the recording.
-      if(interimTxt) MIC.lastInterim = interimTxt;
-      // Interim results fire many times per second while you talk —
-      // update only the one live-text element, never a full render().
-      const interimEl = document.getElementById('interim-text');
-      if(interimEl) interimEl.textContent = interimTxt ? ('Hearing: ' + interimTxt) : 'Listening…';
-    };
-    _micRecognizer.onerror=e=>{
-      MIC.recogError=e.error||'unknown';
-      MIC.recogStatus='error';
-      console.warn('[speech] recognition error:', e.error, e.message||'');
-      _setRecogStatus('Recognizer error: ' + MIC.recogError, true);
-    };
-    _micRecognizer.onend=()=>{
-      MIC.recogStatus='ended';
-      // If no final transcript arrived (common when stop() cuts off a
-      // pending utterance), fall back to the last interim text we saw.
-      if(!MIC.transcript && MIC.lastInterim) MIC.transcript = MIC.lastInterim;
-      if(MIC.phase==='listening') _finishRecording(pyEsc);
-    };
-    try{
-      _micRecognizer.start();
-    }catch(e){
-      MIC.recogError='start-failed: '+(e.message||e.name||'unknown');
-      MIC.recogStatus='error';
-      console.warn('[speech] start() threw:', e);
+  rec.onresult = (e) => {
+    let fin = '', inter = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript || '';
+      if (e.results[i].isFinal) fin += t; else inter += t;
     }
-    // Hard cap: 8s
-    setTimeout(()=>{ if(MIC.phase==='listening'&&_micRecognizer){ try{_micRecognizer.stop();}catch(e){} }}, 8000);
-  } else {
-    MIC.recogStatus='unsupported';
-    console.warn('[speech] SpeechRecognition API not available in this browser/context');
-    setTimeout(()=>{ if(MIC.phase==='listening') _finishRecording(pyEsc); }, 5000);
+    if (fin) MIC.transcript = (MIC.transcript || '') + fin;
+    if (inter) MIC.lastInterim = inter;
+    MIC.interim = inter;
+    _setInterimText(MIC.transcript || inter);
+  };
+
+  rec.onerror = (e) => {
+    MIC.recogError = e.error || 'unknown';
+    MIC.recogStatus = 'error';
+    console.warn('[speech] error:', e.error, e.message || '');
+    _setRecogStatus('Error: ' + MIC.recogError, true);
+    // 'no-speech'/'aborted' still reach onend, which finalizes.
+  };
+
+  rec.onend = () => { _finalizeRecognition(); };
+
+  MIC.recogSupported = true;
+  MIC.phase = 'listening';
+  render();
+
+  try {
+    rec.start();
+  } catch (err) {
+    MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
+    MIC.recogStatus = 'error';
+    console.warn('[speech] start() threw:', err);
+    _finalizeRecognition();
+    return;
   }
+
+  // Safety cap so a stuck session can't hang forever.
+  setTimeout(() => { if (MIC.phase === 'listening') manualStopMic(); }, 12000);
 }
 
+// "Done Speaking". stop() asks the recognizer to finalize what it has;
+// onend then fires and _finalizeRecognition runs. If no final result
+// ever arrives, the last interim text is used instead of discarding
+// everything that was heard.
 function manualStopMic(zhEsc, pyEsc) {
-  if(_micRecognizer){
-    // Give the recognizer a brief moment to finalize whatever it's
-    // currently holding before stopping. Calling stop() the instant the
-    // button is tapped tends to discard an in-flight utterance, which is
-    // what caused "recognizer ran but returned no text".
-    const rec = _micRecognizer;
-    setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, 350);
+  if (_micRecognizer) {
+    try { _micRecognizer.stop(); }
+    catch (e) { _finalizeRecognition(); }
   } else {
-    _finishRecording(pyEsc||_pendingPy);
+    _finalizeRecognition();
   }
 }
 
-function _finishRecording(py) {
-  _micRecognizer=null;
-
-  function _complete(){
-    if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
-    _mediaRecorder=null;
-    MIC.phase='done';
-    render();
-  }
-
-  if(_mediaRecorder && _mediaRecorder.state!=='inactive'){
-    _mediaRecorder.onstop=()=>{
-      try{
-        const mime=_mediaRecorder.mimeType||'audio/webm';
-        const blob=new Blob(_recordedChunks,{type:mime});
-        if(blob.size>1000) _playbackURL=URL.createObjectURL(blob);
-      }catch(e){}
-      _complete();
-    };
-    _mediaRecorder.stop();
-  } else {
-    _complete();
-  }
+function _finalizeRecognition() {
+  if (_recogFinalized) return;   // onend can fire more than once
+  _recogFinalized = true;
+  if (!MIC.transcript && MIC.lastInterim) MIC.transcript = MIC.lastInterim;
+  _micRecognizer = null;
+  MIC.phase = 'done';
+  render();
 }
 
 function retryMic(zhEsc, pyEsc) {
@@ -1607,23 +1487,22 @@ function retryMic(zhEsc, pyEsc) {
   startMicSession(zhEsc, pyEsc);
 }
 
-function showSelfReport(){
+function showSelfReport() {
   resetMic();
-  MIC.phase='self-report';
+  MIC.phase = 'self-report';
   render();
 }
 
-function resetMicAndRender(){ resetMic(); render(); }
+function resetMicAndRender() { resetMic(); render(); }
 
 function resetMic() {
-  if(_micRecognizer){ try{_micRecognizer.stop();}catch(e){} _micRecognizer=null; }
-  if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
-  if(_mediaRecorder&&_mediaRecorder.state!=='inactive'){try{_mediaRecorder.stop();}catch(e){}}
-  _mediaRecorder=null; _recordedChunks=[];
-  if(_playbackURL){URL.revokeObjectURL(_playbackURL);_playbackURL=null;}
-  const oldAudio=document.getElementById('playback-audio');
-  if(oldAudio){oldAudio.pause();oldAudio.remove();}
-  MIC={phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:''};
+  if (_micRecognizer) {
+    try { _micRecognizer.onend = null; _micRecognizer.abort(); } catch(e) {}
+    _micRecognizer = null;
+  }
+  _recogFinalized = true;
+  MIC = {phase:'idle', transcript:'', interim:'', lastInterim:'',
+         recogStatus:'idle', recogError:'', error:''};
 }
 
 function scoreMicResult(correct) {
