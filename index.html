@@ -216,17 +216,47 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .mic-error-body ol{padding-left:18px;margin:8px 0;}
 .mic-error-body ol li{margin-bottom:5px;}
 .mic-error-body code{background:rgba(127,29,29,.1);border-radius:4px;padding:1px 5px;font-size:.82rem;}
+
+/* Volume meter */
+.vol-meter-wrap{height:16px;background:#F0E8E8;border-radius:99px;overflow:hidden;margin:8px 0 4px;position:relative;}
+.vol-meter-fill{height:100%;width:0%;border-radius:99px;transition:width .06s,background .12s;}
+.vol-meter-label{position:absolute;right:8px;top:0;font-size:.64rem;line-height:16px;color:var(--ink-faint);font-family:'DM Sans',sans-serif;}
+/* Playback button */
+.playback-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8;border-radius:10px;padding:10px 16px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;margin-top:10px;transition:all .15s;}
+.playback-btn:hover{background:#DBEAFE;}
+.playback-btn.playing{background:#DBEAFE;border-color:#93C5FD;}
+/* Transcript comparison — closeness coloring */
+.tc-char-col{display:inline-flex;flex-direction:column;align-items:center;margin:0 1px;}
+.tc-char.sub{color:var(--ink);background:#F3F4F6;border-radius:4px;padding:0 2px;}
+.tc-sub-hint{font-size:.6rem;color:var(--ink-faint);line-height:1;margin-top:1px;font-family:'Noto Sans SC',sans-serif;}
+.tc-chars-plain{font-family:'Noto Sans SC',sans-serif;font-size:1.1rem;color:var(--ink-soft);}
+.tc-extra{font-size:.78rem;color:var(--ink-faint);margin-top:6px;}
+.tc-legend{display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:.7rem;color:var(--ink-faint);}
+.tc-leg-item{display:flex;align-items:center;gap:4px;}
+.tc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.tc-dot.good{background:var(--green);}
+.tc-dot.ok{background:var(--ink);}
+.tc-dot.poor{background:var(--wrong);}
+
+/* Debug panel + live status lines */
+.debug-line{font-size:.78rem;text-align:center;border-radius:8px;padding:7px 10px;margin:8px 0;}
+.debug-line.ok{background:#DCFCE7;color:#166534;}
+.debug-line.warn{background:#FEF3C7;color:#92400E;line-height:1.5;}
+.live-transcript{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:1.1rem;text-align:center;color:#1D4ED8;}
+.debug-panel{background:#F3F4F6;border:1.5px solid #E5E7EB;border-radius:12px;padding:12px 14px;margin:12px 0;}
+.debug-panel-title{font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:8px;}
+.debug-row{display:flex;align-items:baseline;gap:8px;font-size:.85rem;margin-bottom:5px;flex-wrap:wrap;}
+.debug-row.warn{background:#FEF3C7;color:#92400E;border-radius:6px;padding:6px 8px;font-size:.8rem;display:block;margin-bottom:8px;}
+.debug-row.warn code{background:rgba(146,64,14,.12);border-radius:4px;padding:1px 5px;}
+.debug-label{color:var(--ink-faint);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;width:100px;flex-shrink:0;}
+.debug-zh{font-family:'Noto Sans SC',sans-serif;font-size:1rem;color:var(--ink);}
+.debug-zh em{color:var(--ink-faint);font-style:italic;font-family:'DM Sans',sans-serif;}
+.debug-py{font-size:.88rem;color:var(--ink-soft);}
 .self-report-link{display:block;width:100%;background:none;border:none;color:var(--ink-faint);font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;text-decoration:underline;text-underline-offset:3px;padding:4px;}
 .self-report-link:hover{color:var(--ink-soft);}
-.pitch-canvas-wrap{border-radius:12px;overflow:hidden;margin:14px 0 8px;border:1.5px solid #F0E8E8;position:relative;background:#FAF3F4;}
 .mic-status{display:flex;align-items:center;gap:8px;font-size:.83rem;color:var(--ink-soft);margin:6px 0 10px;justify-content:center;}
 .rec-dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulseBtn 1s ease-in-out infinite;}
 @keyframes pulseBtn{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(.95);}}
-.tone-guide{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 4px;}
-.tone-pill{display:flex;align-items:center;gap:5px;background:#FAF3F4;border:1.5px solid #F0E8E8;border-radius:99px;padding:5px 10px;font-size:.78rem;}
-.tone-pill-py{font-size:.88rem;color:var(--ink);font-weight:500;}
-.tone-pill-num{font-size:.7rem;font-weight:700;color:var(--gold);background:var(--gold-light);border-radius:99px;padding:1px 5px;font-family:'DM Sans',sans-serif;}
-.tone-shape-svg{display:inline-block;vertical-align:middle;margin-right:2px;}
 .transcript-compare{background:#FAF3F4;border-radius:12px;padding:12px 14px;margin:12px 0 6px;}
 .tc-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;font-size:.85rem;}
 .tc-label{color:var(--ink-faint);font-size:.76rem;width:60px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em;}
@@ -239,8 +269,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .speak-result-btns .speak-correct{flex:1;}
 .speak-result-btns .speak-again{flex:1;}
 .speak-py-large{font-size:1.05rem;color:var(--ink-soft);margin:4px 0 10px;line-height:1.7;}
-.pitch-legend{display:flex;gap:14px;justify-content:center;font-size:.74rem;color:var(--ink-faint);margin-top:4px;margin-bottom:2px;}
-.pitch-legend span{display:flex;align-items:center;gap:4px;}
 @keyframes fadeSlide{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes pop{0%{transform:scale(.9);opacity:0;}60%{transform:scale(1.04);}100%{transform:scale(1);opacity:1;}}
 .fade-in{animation:fadeSlide .28s ease;}
@@ -251,6 +279,279 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <body>
 <div id="app"></div>
 <script>
+const HANZI_PINYIN = {
+  "一":"yī",
+  "三":"sān",
+  "上":"shàng",
+  "下":"xià",
+  "不":"bù",
+  "业":"yè",
+  "两":"liǎng",
+  "个":"gè",
+  "中":"zhōng",
+  "为":"wèi",
+  "久":"jiǔ",
+  "么":"me",
+  "乐":"lè",
+  "也":"yě",
+  "习":"xí",
+  "书":"shū",
+  "买":"mǎi",
+  "了":"le",
+  "京":"jīng",
+  "亮":"liàng",
+  "什":"shén",
+  "今":"jīn",
+  "他":"tā",
+  "以":"yǐ",
+  "们":"men",
+  "休":"xiū",
+  "会":"huì",
+  "但":"dàn",
+  "体":"tǐ",
+  "作":"zuò",
+  "你":"nǐ",
+  "信":"xìn",
+  "做":"zuò",
+  "停":"tíng",
+  "儿":"ér",
+  "公":"gōng",
+  "关":"guān",
+  "兴":"xìng",
+  "写":"xiě",
+  "冷":"lěng",
+  "出":"chū",
+  "利":"lì",
+  "前":"qián",
+  "力":"lì",
+  "功":"gōng",
+  "努":"nǔ",
+  "北":"běi",
+  "医":"yī",
+  "厨":"chú",
+  "去":"qù",
+  "友":"yǒu",
+  "发":"fā",
+  "只":"zhī",
+  "可":"kě",
+  "司":"sī",
+  "吃":"chī",
+  "吗":"ma",
+  "吧":"ba",
+  "听":"tīng",
+  "吸":"xī",
+  "呢":"ne",
+  "和":"hé",
+  "咖":"kā",
+  "哪":"nǎ",
+  "唱":"chàng",
+  "啡":"fēi",
+  "喜":"xǐ",
+  "喝":"hē",
+  "回":"huí",
+  "因":"yīn",
+  "园":"yuán",
+  "国":"guó",
+  "图":"tú",
+  "在":"zài",
+  "地":"de",
+  "坐":"zuò",
+  "多":"duō",
+  "大":"dà",
+  "天":"tiān",
+  "她":"tā",
+  "好":"hǎo",
+  "如":"rú",
+  "妈":"mā",
+  "子":"zi",
+  "学":"xué",
+  "完":"wán",
+  "客":"kè",
+  "家":"jiā",
+  "寿":"shòu",
+  "就":"jiù",
+  "山":"shān",
+  "工":"gōng",
+  "师":"shī",
+  "帮":"bāng",
+  "常":"cháng",
+  "年":"nián",
+  "应":"yīng",
+  "开":"kāi",
+  "影":"yǐng",
+  "很":"hěn",
+  "得":"de",
+  "心":"xīn",
+  "忙":"máng",
+  "快":"kuài",
+  "息":"xī",
+  "想":"xiǎng",
+  "意":"yì",
+  "慢":"màn",
+  "成":"chéng",
+  "我":"wǒ",
+  "或":"huò",
+  "户":"hù",
+  "房":"fáng",
+  "所":"suǒ",
+  "手":"shǒu",
+  "打":"dǎ",
+  "把":"bǎ",
+  "拍":"pāi",
+  "拿":"ná",
+  "播":"bō",
+  "放":"fàng",
+  "教":"jiāo",
+  "文":"wén",
+  "日":"rì",
+  "早":"zǎo",
+  "时":"shí",
+  "明":"míng",
+  "昨":"zuó",
+  "是":"shì",
+  "晚":"wǎn",
+  "更":"gèng",
+  "最":"zuì",
+  "有":"yǒu",
+  "朋":"péng",
+  "本":"běn",
+  "机":"jī",
+  "条":"tiáo",
+  "来":"lái",
+  "杯":"bēi",
+  "果":"guǒ",
+  "校":"xiào",
+  "样":"yàng",
+  "桌":"zhuō",
+  "欢":"huān",
+  "歌":"gē",
+  "正":"zhèng",
+  "步":"bù",
+  "每":"měi",
+  "比":"bǐ",
+  "气":"qì",
+  "水":"shuǐ",
+  "汁":"zhī",
+  "没":"méi",
+  "法":"fǎ",
+  "注":"zhù",
+  "泳":"yǒng",
+  "流":"liú",
+  "海":"hǎi",
+  "游":"yóu",
+  "漂":"piào",
+  "点":"diǎn",
+  "炼":"liàn",
+  "烟":"yān",
+  "烤":"kǎo",
+  "热":"rè",
+  "然":"rán",
+  "照":"zhào",
+  "爬":"pá",
+  "狗":"gǒu",
+  "猫":"māo",
+  "玩":"wán",
+  "现":"xiàn",
+  "班":"bān",
+  "球":"qiú",
+  "甜":"tián",
+  "生":"shēng",
+  "用":"yòng",
+  "电":"diàn",
+  "病":"bìng",
+  "的":"de",
+  "看":"kàn",
+  "真":"zhēn",
+  "着":"zhe",
+  "睡":"shuì",
+  "窗":"chuāng",
+  "等":"děng",
+  "答":"dá",
+  "篮":"lán",
+  "米":"mǐ",
+  "累":"lèi",
+  "练":"liàn",
+  "给":"gěi",
+  "老":"lǎo",
+  "者":"zhě",
+  "聪":"cōng",
+  "能":"néng",
+  "舞":"wǔ",
+  "花":"huā",
+  "英":"yīng",
+  "苹":"píng",
+  "茶":"chá",
+  "菜":"cài",
+  "蕉":"jiāo",
+  "虽":"suī",
+  "被":"bèi",
+  "要":"yào",
+  "见":"jiàn",
+  "觉":"jué",
+  "认":"rèn",
+  "让":"ràng",
+  "识":"shí",
+  "话":"huà",
+  "该":"gāi",
+  "语":"yǔ",
+  "说":"shuō",
+  "请":"qǐng",
+  "谁":"shéi",
+  "质":"zhì",
+  "贵":"guì",
+  "走":"zǒu",
+  "跑":"pǎo",
+  "跟":"gēn",
+  "路":"lù",
+  "跳":"tiào",
+  "身":"shēn",
+  "车":"chē",
+  "辣":"là",
+  "边":"biān",
+  "过":"guò",
+  "还":"hái",
+  "这":"zhè",
+  "进":"jìn",
+  "远":"yuǎn",
+  "迷":"mí",
+  "道":"dào",
+  "那":"nà",
+  "部":"bù",
+  "都":"dōu",
+  "里":"lǐ",
+  "量":"liàng",
+  "铁":"tiě",
+  "锻":"duàn",
+  "门":"mén",
+  "问":"wèn",
+  "间":"jiān",
+  "院":"yuàn",
+  "难":"nán",
+  "雨":"yǔ",
+  "需":"xū",
+  "非":"fēi",
+  "面":"miàn",
+  "音":"yīn",
+  "题":"tí",
+  "饭":"fàn",
+  "饺":"jiǎo",
+  "馆":"guǎn",
+  "香":"xiāng",
+  "高":"gāo",
+  "鸭":"yā"
+};
+
+// Best-effort char-by-char pinyin lookup (covers every character used in
+// this app's own lesson content). Characters outside that set — or where
+// the true reading depends on word context the recognizer doesn't give us
+// (a handful of polyphonic characters) — show without a reading rather
+// than guessing wrong. This is a debugging aid, not a scored feature.
+function charsToPinyin(text) {
+  if(!text) return '';
+  const clean = text.replace(/[。，？！,.?!'" \r\n]/g,'');
+  return [...clean].map(ch => HANZI_PINYIN[ch] || ch).join(' ');
+}
+
 const LESSONS = [
 // ─────────────────────────────────────────────
 // LESSON 1 – 是 / 有 / 也
@@ -699,14 +1000,47 @@ const LESSONS = [
   {t:'tr',zh:'因为他把作业做完了，所以可以出去玩了。',py:'Yīnwèi tā bǎ zuòyè zuò wán le, suǒyǐ kěyǐ chūqù wán le.',ans:'Because he finished his homework, he can go out and play.',opts:['Because he finished his homework, he can go out and play.',"Although he finished his homework, he can't go out.",'If he finishes his homework, he can play.','He went out to play, so his homework is done.']},
 ]}
 ]; // end LESSONS// ── TTS (Google Translate neural voice + browser fallback) ──────────
-let _audio = null;
+// FIX: reuse ONE persistent Audio element for every play, instead of
+// creating a fresh Audio() each call. Mobile browsers pay a "cold audio
+// route" warm-up penalty (eating the first fraction-of-a-second of
+// content) whenever a NEW media element starts playing for the first
+// time — a one-off "unlock" element (the previous approach) never
+// transfers that warm state to later, different Audio objects. Keeping
+// the SAME element alive and just swapping its .src keeps the route warm
+// for every subsequent play.
+let _ttsAudio = null;
+let _audioUnlocked = false;
+
+function _getTTSAudio() {
+  if (!_ttsAudio) { _ttsAudio = new Audio(); _ttsAudio.preload = 'auto'; }
+  return _ttsAudio;
+}
+
+function _unlockAudioOnce() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  const a = _getTTSAudio();
+  try {
+    a.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAA=";
+    a.play().catch(()=>{});
+  } catch(e) {}
+}
+document.addEventListener('touchstart', _unlockAudioOnce, {once:true, passive:true});
+document.addEventListener('click', _unlockAudioOnce, {once:true});
+document.addEventListener('keydown', _unlockAudioOnce, {once:true});
+
 function speakChinese(text) {
   if (!text) return;
+  _unlockAudioOnce();   // establishes _ttsAudio + warms it if this is the very first call
   try {
-    if (_audio) { _audio.pause(); _audio = null; }
+    const audio = _getTTSAudio();
+    audio.pause();
     const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(text);
-    _audio = new Audio(url);
-    _audio.play().catch(() => _browserSpeak(text));
+    audio.onerror = () => _browserSpeak(text);
+    audio.src = url;
+    audio.load();
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => _browserSpeak(text));
   } catch(e) { _browserSpeak(text); }
 }
 function _browserSpeak(text) {
@@ -720,15 +1054,16 @@ function _browserSpeak(text) {
 
 // ── MIC / SPEECH GLOBALS ─────────────────────────────────────────────
 // These live outside S (non-serialisable — AudioContext, MediaStream, RAF)
-let MIC = { phase:'idle', transcript:'', pitchData:[], duration:0, error:'' };
+let MIC = { phase:'idle', transcript:'', interim:'', recogStatus:'idle', recogError:'', error:'' };
 let _micStream=null, _micCtx=null, _micAnalyser=null;
-let _pitchRAF=null, _pitchHistory=[], _recordStart=0;
+let _pitchRAF=null, _recordStart=0;
 let _micRecognizer=null, _pendingPy='';
+let _mediaRecorder=null, _recordedChunks=[], _playbackURL=null;
 
 function _micSpeechOK(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
 function _micAudioOK(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&(window.AudioContext||window.webkitAudioContext)); }
 
-// ── PINYIN PARSING ────────────────────────────────────────────────────
+// ── PINYIN PARSING (kept: used for tone-mark display only) ────────────
 function parsePinyinSyllables(py) {
   const clean = py.replace(/[。，？！,.?!'"\r\n]/g,' ').trim();
   const words = clean.split(/\s+/).filter(Boolean);
@@ -743,160 +1078,154 @@ function parsePinyinSyllables(py) {
   });
 }
 
-// ── AUTOCORRELATION PITCH DETECTION ──────────────────────────────────
-function detectPitch(buf, sampleRate) {
-  const N = buf.length, HALF = N >> 1;
-  let rms = 0;
-  for(let i=0;i<N;i++) rms += buf[i]*buf[i];
-  if(Math.sqrt(rms/N) < 0.007) return -1;          // silence
+// ── PLAYBACK ────────────────────────────────────────────────────────────
+function playbackRecording() {
+  if(!_playbackURL) return;
+  const btn=document.getElementById('playback-btn');
+  const existingAudio=document.getElementById('playback-audio');
+  if(existingAudio){ existingAudio.paused ? existingAudio.play() : (existingAudio.pause(),existingAudio.currentTime=0); return; }
+  const audio=new Audio(_playbackURL);
+  audio.id='playback-audio';
+  if(btn){ btn.classList.add('playing'); btn.textContent='⏹ Stop playback'; }
+  audio.play();
+  audio.onended=()=>{ if(btn){ btn.classList.remove('playing'); btn.innerHTML='🎧 Play back my recording'; } };
+  document.body.appendChild(audio);
+}
 
-  const minLag = Math.floor(sampleRate/620);        // ≈600 Hz ceiling
-  const maxLag = Math.floor(sampleRate/60);         // ≈60 Hz floor
+// ── MIC VISUALS (volume meter + waveform, drawn every RAF frame) ────────
+// Pitch analysis was dropped — real speech recognition (below) gives a
+// far more reliable signal than pitch-curve heuristics ever could.
+function updateMicVisuals(buf) {
+  // RMS volume → meter width + diag text
+  let rms=0;
+  for(let i=0;i<buf.length;i++) rms+=buf[i]*buf[i];
+  rms=Math.sqrt(rms/buf.length);
+  const pct=Math.min(100,Math.round(rms*700));
 
-  // Normalised autocorrelation (NSDF-lite)
-  let bestLag=-1, bestVal=0;
-  for(let lag=minLag; lag<=Math.min(maxLag,HALF-1); lag++){
-    let num=0, den=0;
-    for(let i=0;i<HALF;i++){
-      num += buf[i]*buf[i+lag];
-      den += buf[i]*buf[i] + buf[i+lag]*buf[i+lag];
+  const fill=document.getElementById('vol-fill');
+  if(fill){
+    fill.style.width=pct+'%';
+    fill.style.background=pct>35?'#166534':pct>12?'#CA8A04':'#B0A0A6';
+  }
+
+  const diag=document.getElementById('mic-diag');
+  if(diag){
+    const elapsed=Math.floor((Date.now()-_recordStart)/1000);
+    if(_micCtx && _micCtx.state!=='running'){
+      diag.innerHTML='⚠️ AudioContext '+_micCtx.state+' — tap Stop, then try again';
+      diag.style.color='#C0392B';
+    } else if(rms>0.006){
+      diag.innerHTML='✓ Hearing you clearly';
+      diag.style.color='#166534';
+    } else if(elapsed>2){
+      diag.innerHTML='⚠️ Quiet — try speaking louder or closer to the mic';
+      diag.style.color='#C0392B';
+    } else {
+      diag.innerHTML='Waiting for audio…';
+      diag.style.color='#B0A0A6';
     }
-    const r = den>0 ? 2*num/den : 0;
-    if(r>bestVal && r>0.45){ bestVal=r; bestLag=lag; }
   }
-  return bestLag>0 ? sampleRate/bestLag : -1;
-}
 
-// ── PITCH CANVAS ──────────────────────────────────────────────────────
-function drawPitchCanvas(py, isFinal) {
-  const canvas = document.getElementById('pitch-canvas');
+  // Waveform across the full canvas
+  const canvas=document.getElementById('wave-canvas');
   if(!canvas) return;
-  const W = canvas.width  = canvas.offsetWidth || 300;
-  const H = canvas.height = 130;
-  const ctx = canvas.getContext('2d');
-
-  const PAD={t:22,b:26,l:10,r:10};
-  const dW=W-PAD.l-PAD.r, dH=H-PAD.t-PAD.b;
-
-  // background
+  const W=canvas.width=canvas.offsetWidth||300;
+  const H=canvas.height=64;
+  const ctx=canvas.getContext('2d');
   ctx.fillStyle='#FAF3F4'; ctx.fillRect(0,0,W,H);
-
-  // grid
-  ctx.strokeStyle='rgba(0,0,0,0.055)'; ctx.lineWidth=1;
-  [0.25,0.5,0.75].forEach(f=>{
-    const y=PAD.t+f*dH;
-    ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
-  });
-
-  // Reference curves per syllable
-  const syls = parsePinyinSyllables(py);
-  const nS = Math.max(syls.length,1);
-  const sW = dW/nS;
-  const TONE_SHAPES={
-    1:[[.05,.14],[.95,.14]],
-    2:[[.05,.74],[.95,.10]],
-    3:[[.05,.40],[.32,.90],[.68,.78],[.95,.40]],
-    4:[[.05,.10],[.95,.82]],
-    0:[[.35,.56],[.65,.56]],
-  };
-  const TONE_LABELS=['n','1','2','3','4'];
-
-  syls.forEach((syl,i)=>{
-    const x1=PAD.l+i*sW, x2=x1+sW, xm=(x1+x2)/2;
-    // divider
-    if(i>0){ ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.moveTo(x1,PAD.t); ctx.lineTo(x1,H-PAD.b); ctx.stroke(); ctx.setLineDash([]); }
-    // tone number label
-    ctx.fillStyle='rgba(202,138,4,.75)'; ctx.font='bold 9px DM Sans,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(TONE_LABELS[syl.tone]||'n', xm, PAD.t-6);
-    // reference curve
-    const shape=TONE_SHAPES[syl.tone]||TONE_SHAPES[0];
-    ctx.strokeStyle='rgba(202,138,4,.5)'; ctx.lineWidth=2.5; ctx.setLineDash([6,4]);
-    ctx.beginPath();
-    shape.forEach(([tx,ty],j)=>{ const px=x1+tx*sW, py=PAD.t+ty*dH; j===0?ctx.moveTo(px,py):ctx.lineTo(px,py); });
-    ctx.stroke(); ctx.setLineDash([]);
-    // syllable label at bottom
-    ctx.fillStyle='rgba(107,91,98,.65)'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(syl.syllable, xm, H-7);
-  });
-
-  // User pitch curve
-  const pts = isFinal ? MIC.pitchData : _pitchHistory;
-  const dur = isFinal ? MIC.duration : Math.max(Date.now()-_recordStart,1);
-  if(pts.length>3){
-    const hzArr=pts.map(p=>p.hz);
-    const lo=Math.min(...hzArr), hi=Math.max(...hzArr);
-    const range=Math.max(hi-lo, 25);
-    ctx.strokeStyle='rgba(192,57,43,.85)'; ctx.lineWidth=2.5;
-    ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.beginPath();
-    pts.forEach(({t,hz},i)=>{
-      const x=PAD.l+(t/dur)*dW;
-      const norm=(hz-lo)/range;                    // 0=lo, 1=hi
-      const y=PAD.t+(0.88-norm*0.76)*dH;           // hi→top, lo→bottom
-      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-  } else {
-    ctx.fillStyle='rgba(176,160,166,.55)'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(MIC.phase==='listening'?'Speak now…':'No pitch detected — try speaking louder', W/2, H/2+4);
+  // center line
+  ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+  // waveform
+  ctx.strokeStyle=pct>12?'rgba(192,57,43,0.8)':'rgba(176,160,166,0.55)';
+  ctx.lineWidth=1.5; ctx.beginPath();
+  const step=Math.max(1,Math.floor(buf.length/W));
+  for(let i=0;i<W;i++){
+    const s=buf[i*step]||0;
+    const x=i, y=H/2+s*(H/2)*0.9;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
   }
-
-  // rec indicator
-  if(MIC.phase==='listening'){
-    const t=((Date.now()-_recordStart)/1000).toFixed(1);
-    ctx.fillStyle='#C0392B'; ctx.beginPath(); ctx.arc(12,10,4,0,2*Math.PI); ctx.fill();
-    ctx.fillStyle='rgba(192,57,43,.8)'; ctx.font='10px DM Sans,sans-serif';
-    ctx.textAlign='left'; ctx.fillText(t+'s',20,14);
-  }
+  ctx.stroke();
 }
 
-// ── TRANSCRIPT COMPARISON ─────────────────────────────────────────────
-function compareTranscript(expected, heard) {
-  const norm = s => s.replace(/[。，？！,\.?! \r\n]/g,'');
-  const eArr=[...norm(expected)], hArr=[...norm(heard)];
-  const len=Math.max(eArr.length,1);
-  let matches=0;
-  const pairs=[];
-  for(let i=0;i<Math.max(eArr.length,hArr.length);i++){
-    const e=eArr[i]||'', h=hArr[i]||'';
-    const ok=e&&h&&e===h;
-    if(ok) matches++;
-    pairs.push({e,h,ok});
+// ── ALIGNMENT-BASED TRANSCRIPT COMPARISON ────────────────────────────────
+// Uses edit-distance (Levenshtein) alignment instead of naive positional
+// comparison — a single dropped/extra character no longer cascades into
+// every following character showing as wrong.
+function _alignChars(expArr, heardArr) {
+  const n=expArr.length, m=heardArr.length;
+  const dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=0;i<=n;i++) dp[i][0]=i;
+  for(let j=0;j<=m;j++) dp[0][j]=j;
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++){
+    dp[i][j] = expArr[i-1]===heardArr[j-1]
+      ? dp[i-1][j-1]
+      : 1+Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
   }
-  return {pairs, pct:Math.round(matches/len*100)};
+  let i=n, j=m; const ops=[];
+  while(i>0||j>0){
+    if(i>0&&j>0&&expArr[i-1]===heardArr[j-1]&&dp[i][j]===dp[i-1][j-1]){
+      ops.push({type:'match',e:expArr[i-1],h:heardArr[j-1]}); i--; j--;
+    } else if(i>0&&j>0&&dp[i][j]===dp[i-1][j-1]+1){
+      ops.push({type:'sub',e:expArr[i-1],h:heardArr[j-1]}); i--; j--;
+    } else if(i>0&&dp[i][j]===dp[i-1][j]+1){
+      ops.push({type:'del',e:expArr[i-1],h:null}); i--;
+    } else {
+      ops.push({type:'ins',e:null,h:heardArr[j-1]}); j--;
+    }
+  }
+  return ops.reverse();
+}
+
+// "Closeness" definition:
+//  MATCH (exact char, right position)       → green  — nailed it
+//  SUBSTITUTION (recognizer heard something
+//    else in that slot)                     → black  — attempted, unclear if right
+//  DELETION (nothing recognized there at all)→ red    — likely not said / not heard
+//  Overall % = (matches + 0.5×substitutions) / expected length
+function compareTranscript(expected, heard) {
+  const norm = s => [...s.replace(/[。，？！,.?!'" \r\n]/g,'')];
+  const eArr = norm(expected), hArr = norm(heard||'');
+  if(hArr.length===0){
+    return { expectedRow: eArr.map(ch=>({ch,grade:'poor'})), extras:[], pct:0, matches:0, subs:0, dels:eArr.length, total:eArr.length||1 };
+  }
+  const ops=_alignChars(eArr,hArr);
+  let matches=0, subs=0, dels=0;
+  const expectedRow=[]; const extras=[];
+  ops.forEach(op=>{
+    if(op.type==='match'){ matches++; expectedRow.push({ch:op.e,grade:'good'}); }
+    else if(op.type==='sub'){ subs++; expectedRow.push({ch:op.e,grade:'ok',heardCh:op.h}); }
+    else if(op.type==='del'){ dels++; expectedRow.push({ch:op.e,grade:'poor'}); }
+    else if(op.type==='ins'){ extras.push(op.h); }
+  });
+  const total=eArr.length||1;
+  const pct=Math.round((matches+subs*0.5)/total*100);
+  return {expectedRow, extras, pct, matches, subs, dels, total};
 }
 
 function renderTranscriptCompare(expected, heard) {
-  if(!heard) return `<div class="transcript-compare"><div class="tc-pct" style="color:var(--ink-faint)">Nothing recognized — try again or tap "Self-report"</div></div>`;
-  const {pairs, pct} = compareTranscript(expected, heard);
-  const expHtml = pairs.map(({e,ok})=>`<span class="tc-char ${ok?'match':'miss'}">${e||'?'}</span>`).join('');
-  const heardHtml = pairs.map(({h,ok})=>`<span class="tc-char ${h?ok?'match':'miss':'neutral'}">${h||'—'}</span>`).join('');
+  if(!heard){
+    return `<div class="transcript-compare"><div class="tc-pct" style="color:var(--ink-faint)">Nothing recognized — try again, speak a bit louder, or use "Self-report"</div></div>`;
+  }
+  const r = compareTranscript(expected, heard);
+  const expHtml = r.expectedRow.map(item=>{
+    const cls = item.grade==='good'?'match':item.grade==='ok'?'sub':'miss';
+    const hint = item.grade==='ok'&&item.heardCh ? `<span class="tc-sub-hint">${item.heardCh}</span>` : '';
+    return `<span class="tc-char-col"><span class="tc-char ${cls}">${item.ch}</span>${hint}</span>`;
+  }).join('');
+  const extraHtml = r.extras.length
+    ? `<div class="tc-extra">+ also heard: <span class="zh">${r.extras.join('')}</span></div>` : '';
+  const heardPlain = heard.replace(/[。，？！,.?!'" \r\n]/g,'');
   return `<div class="transcript-compare">
     <div class="tc-row"><span class="tc-label">Expected</span><span class="tc-chars">${expHtml}</span></div>
-    <div class="tc-row"><span class="tc-label">Heard</span><span class="tc-chars">${heardHtml}</span></div>
-    <div class="tc-pct">${pct}% match</div>
+    <div class="tc-row"><span class="tc-label">Heard</span><span class="tc-chars-plain">${heardPlain}</span></div>
+    ${extraHtml}
+    <div class="tc-pct"><strong>${r.pct}%</strong> close match</div>
+    <div class="tc-legend"><span class="tc-leg-item"><span class="tc-dot good"></span>matched</span><span class="tc-leg-item"><span class="tc-dot ok"></span>heard something else</span><span class="tc-leg-item"><span class="tc-dot poor"></span>not heard</span></div>
   </div>`;
 }
 
-// ── TONE GUIDE (compact) ──────────────────────────────────────────────
-const TONE_SVGS = {
-  1:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,6 H20" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  2:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,10 L20,2" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  3:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,4 L8,10 L14,9 L20,5" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
-  4:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><path d="M2,2 L20,10" stroke="#CA8A04" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  0:`<svg class="tone-shape-svg" width="22" height="12" viewBox="0 0 22 12"><circle cx="11" cy="8" r="2.5" fill="#B0A0A6"/></svg>`,
-};
-function renderToneGuide(py) {
-  const syls = parsePinyinSyllables(py);
-  if(syls.length===0) return '';
-  const pills = syls.map(({syllable,tone})=>
-    `<span class="tone-pill">${TONE_SVGS[tone]||TONE_SVGS[0]}<span class="tone-pill-py">${syllable}</span><span class="tone-pill-num">${tone||'n'}</span></span>`
-  ).join('');
-  return `<div style="margin-bottom:4px;font-size:.74rem;color:var(--ink-faint);text-align:center">Tones to aim for:</div><div class="tone-guide">${pills}</div>`;
-}
-
-// ── NEW renderSpeak ────────────────────────────────────────────────────
+// ── renderSpeak ───────────────────────────────────────────────────────
 function renderSpeak(p) {
   const zhEsc = p.zh.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const pyEsc = p.py.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -916,7 +1245,11 @@ function renderSpeak(p) {
 
   // ── IDLE ──
   if(MIC.phase==='idle'){
-    const canMic = _micSpeechOK() || _micAudioOK();
+    const canMic = _micAudioOK();
+    const speechOK = _micSpeechOK();
+    const speechNote = speechOK
+      ? `<div class="debug-line ok">✓ Speech recognition available in this browser</div>`
+      : `<div class="debug-line warn">⚠️ Speech recognition (SpeechRecognition API) is NOT available here — transcripts will always be empty. This commonly happens in an installed home-screen PWA/WebView even when the same URL works fine in a normal Chrome tab. Try opening the link directly in Chrome to compare.</div>`;
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
@@ -924,9 +1257,10 @@ function renderSpeak(p) {
         <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it first</button>
         <div class="audio-hint">Click any Chinese text to hear pronunciation</div>
       </div>
-      ${renderToneGuide(p.py)}
+      ${speechNote}
       ${canMic
-        ? `<button class="mic-btn" onclick="startMicSession('${zhEsc}','${pyEsc}')">🎙 Tap to Speak &amp; Record</button>`
+        ? `<button class="mic-btn" onclick="startMicSession('${zhEsc}','${pyEsc}')">🎙 Tap to Speak &amp; Record</button>
+           <div style="font-size:.76rem;color:var(--ink-faint);text-align:center;margin-top:8px">Your speech will be recognized and compared to the phrase above</div>`
         : `<div style="font-size:.82rem;color:var(--ink-faint);text-align:center;margin:12px 0">Mic not available in this browser</div>`}
       <button class="self-report-link" onclick="showSelfReport()">Skip mic — self-report instead</button>
     </div>`;
@@ -936,23 +1270,36 @@ function renderSpeak(p) {
   if(MIC.phase==='requesting'){
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
       <div class="speak-main"><div class="speak-zh">${p.zh}</div><div class="speak-py speak-py-large">${p.py}</div></div>
-      <div class="mic-status">Requesting microphone access…</div>
+      <div class="mic-status">Starting microphone &amp; audio engine…</div>
+      <div style="font-size:.74rem;color:var(--ink-faint);text-align:center;margin-top:4px">Allow microphone access if prompted</div>
     </div>`;
   }
 
   // ── LISTENING ──
   if(MIC.phase==='listening'){
+    const recogStatusLabels = {
+      'idle':'Starting…', 'listening':'🎤 Recognizer active — go ahead and speak',
+      'audio-detected':'🎤 Recognizer active — go ahead and speak',
+      'speech-detected':'💬 Speech detected!', 'error':'⚠️ Recognizer error: '+(MIC.recogError||'?'),
+      'ended':'Recognizer stopped', 'unsupported':'⚠️ Speech recognition unavailable in this browser'
+    };
+    const recogLine = MIC.recogSupported
+      ? `<div class="debug-line ${MIC.recogStatus==='error'?'warn':'ok'}">${recogStatusLabels[MIC.recogStatus]||MIC.recogStatus}</div>`
+      : `<div class="debug-line warn">⚠️ No speech recognition — recording audio only, transcript will be empty</div>`;
+    const interimLine = MIC.interim
+      ? `<div class="live-transcript">Hearing: <span class="zh">${MIC.interim}</span></div>` : '';
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Recording</div>
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
         <div class="speak-py speak-py-large">${p.py}</div>
       </div>
-      <div class="pitch-canvas-wrap"><canvas id="pitch-canvas" style="width:100%;display:block;border-radius:10px;"></canvas></div>
-      <div class="pitch-legend">
-        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(202,138,4,.6)" stroke-width="2" stroke-dasharray="4,3"/></svg> expected tones</span>
-        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(192,57,43,.8)" stroke-width="2"/></svg> your pitch</span>
-      </div>
-      <div class="mic-status"><span class="rec-dot"></span>Recording — say the phrase above, then tap Done</div>
+      ${recogLine}
+      ${interimLine}
+      <div style="margin:8px 0 2px;font-size:.74rem;color:var(--ink-faint)">Volume (any sound):</div>
+      <div class="vol-meter-wrap"><div class="vol-meter-fill" id="vol-fill"></div><span class="vol-meter-label">mic level</span></div>
+      <canvas id="wave-canvas" style="width:100%;height:64px;display:block;border-radius:10px;margin-top:8px;"></canvas>
+      <div class="mic-status"><span class="rec-dot"></span>Recording — say the phrase, then tap Done</div>
+      <div id="mic-diag" style="font-size:.74rem;text-align:center;min-height:18px;margin:4px 0 2px;transition:color .3s;">Waiting for audio…</div>
       <button class="mic-stop-btn" onclick="manualStopMic('${zhEsc}','${pyEsc}')">⏹ Done Speaking</button>
     </div>`;
   }
@@ -974,17 +1321,38 @@ function renderSpeak(p) {
 
   // ── DONE (mic result) ──
   if(MIC.phase==='done'){
-    const cmp = MIC.transcript ? compareTranscript(p.zh, MIC.transcript) : null;
-    const perfectMatch = cmp && cmp.pct===100;
-    const goodMatch    = cmp && cmp.pct>=70;
+    const r = MIC.transcript ? compareTranscript(p.zh, MIC.transcript) : null;
+    const perfectMatch = r && r.pct>=95;
+    const goodMatch    = r && r.pct>=65;
 
-    // Schedule canvas redraw after DOM settles
-    setTimeout(()=>drawPitchCanvas(p.py, true), 40);
+    const playbackBtn=_playbackURL
+      ? `<button class="playback-btn" id="playback-btn" onclick="playbackRecording()">🎧 Play back my recording</button>`
+      : '';
+
+    // ── DEBUG PANEL — always shown for now, per explicit request.
+    //    Shows exactly what the recognizer heard (characters + best-effort
+    //    pinyin), any error it hit, and whether the API was even available.
+    const heardPinyin = MIC.transcript ? charsToPinyin(MIC.transcript) : '';
+    const expectedPinyin = p.py;
+    let debugRows = '';
+    if(!MIC.recogSupported){
+      debugRows += `<div class="debug-row warn">⚠️ SpeechRecognition API not supported in this browser/context — recording works, but nothing can ever be transcribed here.</div>`;
+    } else if(MIC.recogError){
+      debugRows += `<div class="debug-row warn">⚠️ Recognizer error: <code>${MIC.recogError}</code></div>`;
+    }
+    debugRows += `<div class="debug-row"><span class="debug-label">Expected</span><span class="debug-zh">${p.zh}</span></div>
+      <div class="debug-row"><span class="debug-label">Expected pinyin</span><span class="debug-py">${expectedPinyin}</span></div>
+      <div class="debug-row"><span class="debug-label">Heard (chars)</span><span class="debug-zh">${MIC.transcript||'<em>(nothing)</em>'}</span></div>
+      <div class="debug-row"><span class="debug-label">Heard (pinyin)</span><span class="debug-py">${heardPinyin||'—'}</span></div>`;
+    const debugPanel = `<div class="debug-panel">
+      <div class="debug-panel-title">🔍 Debug info</div>
+      ${debugRows}
+    </div>`;
 
     const actionHtml = perfectMatch
-      ? `<div class="feedback-bar correct" style="margin-top:12px"><span class="feedback-icon">✅</span><div><div>Perfect match — great pronunciation!</div></div></div>
+      ? `<div class="feedback-bar correct" style="margin-top:12px"><span class="feedback-icon">✅</span><div><div>Great match — nicely done!</div></div></div>
          <button class="next-btn" onclick="scoreMicResult(true)">Next →</button>`
-      : `<div style="font-size:.82rem;color:var(--ink-soft);margin:10px 0 6px;text-align:center">${goodMatch?'Almost there — how do you feel about it?':'Didn\'t quite match — try again or continue:'}</div>
+      : `<div style="font-size:.82rem;color:var(--ink-soft);margin:10px 0 6px;text-align:center">${goodMatch?'Pretty close — how do you feel about it?':'Not a strong match — try again or continue:'}</div>
          <div class="speak-result-btns">
            <button class="speak-correct" onclick="scoreMicResult(true)">✓ Count it correct</button>
            <button class="speak-again" onclick="retryMic('${zhEsc}','${pyEsc}')">↺ Try again</button>
@@ -994,68 +1362,38 @@ function renderSpeak(p) {
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
         <div class="speak-py">${p.py}</div>
-        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear it again</button>
+        <button class="audio-btn" onclick="speakChinese('${zhEsc}')">🔊 Hear target again</button>
       </div>
-      <div class="pitch-canvas-wrap"><canvas id="pitch-canvas" style="width:100%;display:block;border-radius:10px;"></canvas></div>
-      <div class="pitch-legend">
-        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(202,138,4,.6)" stroke-width="2" stroke-dasharray="4,3"/></svg> expected</span>
-        <span><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(192,57,43,.8)" stroke-width="2"/></svg> your pitch</span>
-      </div>
-      ${MIC.transcript ? renderTranscriptCompare(p.zh, MIC.transcript) : '<div class="tc-pct" style="color:var(--ink-faint);text-align:center;padding:8px 0">No transcript (pitch only)</div>'}
+      ${playbackBtn}
+      ${debugPanel}
+      ${MIC.transcript ? renderTranscriptCompare(p.zh, MIC.transcript) : ''}
       ${actionHtml}
     </div>`;
   }
 
-  // Error state — detailed, actionable help
+  // ── ERROR ──
   if(MIC.phase==='error'){
     const et = MIC.errorType || 'unknown';
     const msgs = {
       denied: {
-        icon:'🔒',
-        title:'Microphone access blocked',
+        icon:'🔒', title:'Microphone access blocked',
         body:`<p>Chrome remembered a previous "deny." Here's how to fix it on Android:</p>
-          <ol>
-          <li>Tap the <strong>lock icon</strong> in the address bar</li>
+          <ol><li>Tap the <strong>lock icon</strong> in the address bar</li>
           <li>Tap <strong>Permissions → Microphone</strong></li>
           <li>Switch to <strong>Allow</strong></li>
-          <li>Tap <strong>Reload</strong> below</li>
-          </ol>
+          <li>Tap <strong>Reload</strong> below</li></ol>
           <p style="margin-top:8px">Or: Android Settings → Apps → Chrome → Permissions → Microphone → Allow</p>`,
         btn:'↺ Reload page'
       },
-      notfound: {
-        icon:'🎤',
-        title:'No microphone found',
-        body:`<p>This device doesn't appear to have a microphone, or it isn't connected.</p>`,
-        btn:null
-      },
-      inuse: {
-        icon:'⚠️',
-        title:'Microphone is in use',
-        body:`<p>Another app is using the microphone. Close any apps using audio (calls, voice recorders) and try again.</p>`,
-        btn:'Try Again'
-      },
-      insecure: {
-        icon:'🔐',
-        title:'Microphone requires HTTPS',
-        body:`<p>Microphone access only works when the app is served over <strong>HTTPS</strong>.</p>
-          <p style="margin-top:6px">Opening the file directly (<code>file://</code>) or over plain HTTP won't work.</p>
-          <p style="margin-top:6px"><strong>Fix:</strong> Host the app on GitHub Pages (or any HTTPS server) and open it from there.</p>`,
-        btn:null
-      },
-      unknown: {
-        icon:'❓',
-        title:'Microphone unavailable',
-        body:`<p>Something went wrong accessing the microphone. Make sure Chrome has mic permission in Android Settings → Apps → Chrome → Permissions.</p>`,
-        btn:'Try Again'
-      },
+      notfound: { icon:'🎤', title:'No microphone found', body:`<p>This device doesn't appear to have a microphone, or it isn't connected.</p>`, btn:null },
+      inuse: { icon:'⚠️', title:'Microphone is in use', body:`<p>Another app is using the microphone. Close any apps using audio and try again.</p>`, btn:'Try Again' },
+      insecure: { icon:'🔐', title:'Microphone requires HTTPS', body:`<p>Microphone access only works over <strong>HTTPS</strong>.</p><p style="margin-top:6px">Opening the file directly (<code>file://</code>) won't work — host on GitHub Pages instead.</p>`, btn:null },
+      unknown: { icon:'❓', title:'Microphone unavailable', body:`<p>Something went wrong. Check Chrome has mic permission in Android Settings → Apps → Chrome → Permissions.</p>`, btn:'Try Again' },
     };
     const m = msgs[et] || msgs.unknown;
     const reloadBtn = et==='denied'
       ? `<button class="mic-btn" onclick="location.reload()" style="margin-top:14px">${m.btn}</button>`
-      : m.btn
-        ? `<button class="mic-btn" onclick="resetMicAndRender()" style="margin-top:14px">${m.btn}</button>`
-        : '';
+      : m.btn ? `<button class="mic-btn" onclick="resetMicAndRender()" style="margin-top:14px">${m.btn}</button>` : '';
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud</div>
       <div class="mic-error-card">
         <div class="mic-error-icon">${m.icon}</div>
@@ -1071,7 +1409,7 @@ function renderSpeak(p) {
 // ── MIC SESSION CONTROL ────────────────────────────────────────────────
 async function startMicSession(zhEsc, pyEsc) {
   _pendingPy = pyEsc;
-  MIC = {phase:'requesting', transcript:'', pitchData:[], duration:0, error:''};
+  MIC = {phase:'requesting', transcript:'', interim:'', recogStatus:'idle', recogError:'', error:''};
   render();
 
   // 1. Secure context check (getUserMedia requires HTTPS or localhost)
@@ -1098,42 +1436,90 @@ async function startMicSession(zhEsc, pyEsc) {
   if(_micAudioOK()){
     const AC = window.AudioContext||window.webkitAudioContext;
     _micCtx = new AC();
+    // CRITICAL FIX: Android/Chrome starts AudioContext suspended.
+    // Must resume() explicitly after a user gesture or getFloatTimeDomainData returns zeros.
+    if(_micCtx.state === 'suspended') {
+      try { await _micCtx.resume(); } catch(e) { console.warn('[mic] resume failed', e); }
+    }
     _micAnalyser = _micCtx.createAnalyser();
     _micAnalyser.fftSize = 2048;
     _micCtx.createMediaStreamSource(_micStream).connect(_micAnalyser);
+    console.log('[mic] AudioContext state after resume:', _micCtx.state);
   }
 
-  _pitchHistory=[]; _recordStart=Date.now();
+  // MediaRecorder for playback
+  _recordedChunks=[]; _playbackURL=null;
+  try {
+    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg',''].find(m=>!m||MediaRecorder.isTypeSupported(m))||'';
+    _mediaRecorder=new MediaRecorder(_micStream, mime?{mimeType:mime}:{});
+    _mediaRecorder.ondataavailable=e=>{ if(e.data&&e.data.size>0) _recordedChunks.push(e.data); };
+    _mediaRecorder.start(200);                    // collect chunks every 200ms
+  } catch(e){ _mediaRecorder=null; }
+
+  _recordStart=Date.now();
   MIC.phase='listening'; render();
 
-  // 3. Pitch tracking RAF loop (updates canvas directly without full re-render)
+  // 3. Live visuals RAF loop — volume meter + waveform + diag status.
+  //    (Pitch-curve analysis was removed; speech recognition below gives
+  //    a far more reliable "how close was it" signal.)
   if(_micAnalyser){
     const buf=new Float32Array(_micAnalyser.fftSize);
     (function loop(){
       if(MIC.phase!=='listening'){return;}
       _micAnalyser.getFloatTimeDomainData(buf);
-      const hz=detectPitch(buf,_micCtx.sampleRate);
-      if(hz>60&&hz<650) _pitchHistory.push({t:Date.now()-_recordStart, hz});
-      drawPitchCanvas(pyEsc, false);
+      updateMicVisuals(buf);
       _pitchRAF=requestAnimationFrame(loop);
     })();
   }
 
-  // 4. Speech recognition
-  if(_micSpeechOK()){
+  // 4. Speech recognition — every lifecycle event is now surfaced for
+  //    debugging instead of silently swallowed (previous version hid
+  //    'no-speech' and 'aborted' errors entirely, and start() exceptions
+  //    were caught and discarded with no trace).
+  MIC.recogSupported = _micSpeechOK();
+  if(MIC.recogSupported){
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     _micRecognizer=new SR();
     _micRecognizer.lang='zh-CN';
-    _micRecognizer.continuous=false;
-    _micRecognizer.interimResults=false;
-    _micRecognizer.maxAlternatives=3;
-    _micRecognizer.onresult=e=>{ MIC.transcript=e.results[0][0].transcript||''; };
-    _micRecognizer.onerror=e=>{ if(e.error!=='no-speech'&&e.error!=='aborted') MIC.error=e.error; };
-    _micRecognizer.onend=()=>{ if(MIC.phase==='listening') _finishRecording(pyEsc); };
-    try{ _micRecognizer.start(); }catch(e){}
+    _micRecognizer.continuous=true;         // keep listening across pauses
+    _micRecognizer.interimResults=true;     // live partial results = proof it's working
+    _micRecognizer.maxAlternatives=1;
+    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; render(); };
+    _micRecognizer.onaudiostart=()=>{ MIC.recogStatus='audio-detected'; };
+    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; render(); };
+    _micRecognizer.onresult=e=>{
+      let finalTxt='', interimTxt='';
+      for(let i=0;i<e.results.length;i++){
+        const txt=e.results[i][0].transcript||'';
+        if(e.results[i].isFinal) finalTxt+=txt; else interimTxt+=txt;
+      }
+      if(finalTxt) MIC.transcript=(MIC.transcript||'')+finalTxt;
+      MIC.interim=interimTxt;
+      render();
+    };
+    _micRecognizer.onerror=e=>{
+      MIC.recogError=e.error||'unknown';
+      MIC.recogStatus='error';
+      console.warn('[speech] recognition error:', e.error, e.message||'');
+      render();
+    };
+    _micRecognizer.onend=()=>{
+      MIC.recogStatus='ended';
+      if(MIC.phase==='listening') _finishRecording(pyEsc);
+    };
+    try{
+      _micRecognizer.start();
+    }catch(e){
+      MIC.recogError='start-failed: '+(e.message||e.name||'unknown');
+      MIC.recogStatus='error';
+      console.warn('[speech] start() threw:', e);
+      render();
+    }
     // Hard cap: 8s
     setTimeout(()=>{ if(MIC.phase==='listening'&&_micRecognizer){ try{_micRecognizer.stop();}catch(e){} }}, 8000);
   } else {
+    MIC.recogStatus='unsupported';
+    console.warn('[speech] SpeechRecognition API not available in this browser/context');
     // No speech API: auto-stop after 5s
     setTimeout(()=>{ if(MIC.phase==='listening') _finishRecording(pyEsc); }, 5000);
   }
@@ -1146,13 +1532,29 @@ function manualStopMic(zhEsc, pyEsc) {
 
 function _finishRecording(py) {
   if(_pitchRAF){ cancelAnimationFrame(_pitchRAF); _pitchRAF=null; }
-  if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
-  if(_micCtx){ try{_micCtx.close();}catch(e){} _micCtx=null; } _micAnalyser=null;
   _micRecognizer=null;
-  MIC.phase='done';
-  MIC.pitchData=[..._pitchHistory];
-  MIC.duration=Math.max(Date.now()-_recordStart,1);
-  render();
+
+  function _complete(){
+    if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
+    if(_micCtx){ try{_micCtx.close();}catch(e){} _micCtx=null; } _micAnalyser=null;
+    _mediaRecorder=null;
+    MIC.phase='done';
+    render();
+  }
+
+  if(_mediaRecorder && _mediaRecorder.state!=='inactive'){
+    _mediaRecorder.onstop=()=>{
+      try{
+        const mime=_mediaRecorder.mimeType||'audio/webm';
+        const blob=new Blob(_recordedChunks,{type:mime});
+        if(blob.size>1000) _playbackURL=URL.createObjectURL(blob);
+      }catch(e){}
+      _complete();
+    };
+    _mediaRecorder.stop();
+  } else {
+    _complete();
+  }
 }
 
 function retryMic(zhEsc, pyEsc) {
@@ -1173,8 +1575,12 @@ function resetMic() {
   if(_micRecognizer){ try{_micRecognizer.stop();}catch(e){} _micRecognizer=null; }
   if(_micStream){ _micStream.getTracks().forEach(t=>t.stop()); _micStream=null; }
   if(_micCtx){ try{_micCtx.close();}catch(e){} _micCtx=null; } _micAnalyser=null;
-  MIC={phase:'idle', transcript:'', pitchData:[], duration:0, error:''};
-  _pitchHistory=[];
+  if(_mediaRecorder&&_mediaRecorder.state!=='inactive'){try{_mediaRecorder.stop();}catch(e){}}
+  _mediaRecorder=null; _recordedChunks=[];
+  if(_playbackURL){URL.revokeObjectURL(_playbackURL);_playbackURL=null;}
+  const oldAudio=document.getElementById('playback-audio');
+  if(oldAudio){oldAudio.pause();oldAudio.remove();}
+  MIC={phase:'idle', transcript:'', error:''};
 }
 
 function scoreMicResult(correct) {
