@@ -993,7 +993,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'B7';
+const APP_BUILD = 'B8';
 
 // ── TTS (Google Translate neural voice + browser fallback) ──────────
 // FIX: reuse ONE persistent Audio element for every play, instead of
@@ -1029,15 +1029,14 @@ let _ttsToken = 0;
 let _ttsFallbackTimer = null;
 function speakChinese(text) {
   if (!text) return;
-  _unlockAudioOnce();   // establishes _ttsAudio + warms it if this is the very first call
+  _unlockAudioOnce();
+  // Always silence any in-flight browser-TTS utterance from a previous
+  // call before starting a new one.
+  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {}
   try {
     const audio = _getTTSAudio();
     audio.pause();
 
-    // Cancel any pending fallback timer from a PREVIOUS call — otherwise
-    // an older timer could fire against the new source and start a second
-    // overlapping playback. Each call also gets a token so late callbacks
-    // belonging to a superseded call are ignored.
     if (_ttsFallbackTimer) { clearTimeout(_ttsFallbackTimer); _ttsFallbackTimer = null; }
     const myToken = ++_ttsToken;
 
@@ -1046,23 +1045,33 @@ function speakChinese(text) {
     const doPlay = () => {
       if (played || myToken !== _ttsToken) return;
       played = true;
-      // Detach the handler immediately. Because the SAME audio element is
-      // reused for every phrase, leaving oncanplay attached meant a later
-      // buffering event on the same source could re-invoke it and play the
-      // clip a second time — the duplicate-playback bug.
       audio.oncanplay = null;
-      audio.play().catch(() => _browserSpeak(text));
+      audio.play().catch(err => {
+        // THE DUPLICATE-AUDIO BUG: this catch previously fired
+        // _browserSpeak() on ANY rejection. But Chrome rejects with
+        // AbortError whenever a play() is interrupted by a new src or a
+        // pause() — which happens routinely here — even though the audio
+        // did start. Result: Google TTS played (clipped by the
+        // interruption) AND the browser voice then spoke the whole
+        // phrase = the "plays twice, first one clipped" symptom.
+        // Only fall back on genuine playback failures, and only if this
+        // call is still the current one.
+        if (err && err.name === 'AbortError') return;
+        if (myToken !== _ttsToken) return;
+        _browserSpeak(text, myToken);
+      });
     };
     audio.oncanplay = doPlay;
-    audio.onerror = () => { if(!played && myToken === _ttsToken) _browserSpeak(text); };
+    audio.onerror = () => { if(!played && myToken === _ttsToken) _browserSpeak(text, myToken); };
     audio.src = url;
     audio.load();
-    // Slow-network fallback (tracked so it can be cancelled above).
     _ttsFallbackTimer = setTimeout(() => { doPlay(); }, 2500);
-  } catch(e) { _browserSpeak(text); }
+  } catch(e) { _browserSpeak(text, _ttsToken); }
 }
-function _browserSpeak(text) {
+function _browserSpeak(text, token) {
   if (!window.speechSynthesis) return;
+  // Ignore late fallbacks belonging to a superseded call.
+  if (typeof token === 'number' && token !== _ttsToken) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-CN'; u.rate = 0.85;
@@ -1072,7 +1081,7 @@ function _browserSpeak(text) {
 
 // ── MIC / SPEECH GLOBALS ─────────────────────────────────────────────
 // These live outside S (non-serialisable — AudioContext, MediaStream, RAF)
-let MIC = { phase:'idle', transcript:'', interim:'', recogStatus:'idle', recogError:'', error:'' };
+let MIC = { phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:'' };
 let _micStream=null;
 let _pitchRAF=null, _recordStart=0;
 let _micRecognizer=null, _pendingPy='';
@@ -1443,7 +1452,7 @@ function renderSpeak(p) {
 // consumer of the microphone stream.
 async function startMicSession(zhEsc, pyEsc) {
   _pendingPy = pyEsc;
-  MIC = {phase:'requesting', transcript:'', interim:'', recogStatus:'idle', recogError:'', error:''};
+  MIC = {phase:'requesting', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:''};
   render();
 
   // 1. Secure context check (getUserMedia requires HTTPS or localhost)
@@ -1514,6 +1523,13 @@ async function startMicSession(zhEsc, pyEsc) {
       }
       if(finalTxt) MIC.transcript=(MIC.transcript||'')+finalTxt;
       MIC.interim=interimTxt;
+      // Keep the latest interim text as a safety net. Chrome's stop()
+      // discards pending interim results WITHOUT finalizing them, so if
+      // the user taps "Done Speaking" mid-utterance, onresult may never
+      // deliver a final transcript and everything heard would be thrown
+      // away ("recognizer ran but returned no text"). Retaining the last
+      // interim lets us fall back to it rather than losing the recording.
+      if(interimTxt) MIC.lastInterim = interimTxt;
       // Interim results fire many times per second while you talk —
       // update only the one live-text element, never a full render().
       const interimEl = document.getElementById('interim-text');
@@ -1527,6 +1543,9 @@ async function startMicSession(zhEsc, pyEsc) {
     };
     _micRecognizer.onend=()=>{
       MIC.recogStatus='ended';
+      // If no final transcript arrived (common when stop() cuts off a
+      // pending utterance), fall back to the last interim text we saw.
+      if(!MIC.transcript && MIC.lastInterim) MIC.transcript = MIC.lastInterim;
       if(MIC.phase==='listening') _finishRecording(pyEsc);
     };
     try{
@@ -1546,8 +1565,16 @@ async function startMicSession(zhEsc, pyEsc) {
 }
 
 function manualStopMic(zhEsc, pyEsc) {
-  if(_micRecognizer){ try{_micRecognizer.stop();}catch(e){} }
-  else _finishRecording(pyEsc||_pendingPy);
+  if(_micRecognizer){
+    // Give the recognizer a brief moment to finalize whatever it's
+    // currently holding before stopping. Calling stop() the instant the
+    // button is tapped tends to discard an in-flight utterance, which is
+    // what caused "recognizer ran but returned no text".
+    const rec = _micRecognizer;
+    setTimeout(()=>{ try{ rec.stop(); }catch(e){} }, 350);
+  } else {
+    _finishRecording(pyEsc||_pendingPy);
+  }
 }
 
 function _finishRecording(py) {
@@ -1596,7 +1623,7 @@ function resetMic() {
   if(_playbackURL){URL.revokeObjectURL(_playbackURL);_playbackURL=null;}
   const oldAudio=document.getElementById('playback-audio');
   if(oldAudio){oldAudio.pause();oldAudio.remove();}
-  MIC={phase:'idle', transcript:'', interim:'', recogStatus:'idle', recogError:'', error:''};
+  MIC={phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:''};
 }
 
 function scoreMicResult(correct) {
