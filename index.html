@@ -225,6 +225,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 @keyframes micPulse{0%{transform:scale(.7);opacity:.5;}100%{transform:scale(1.35);opacity:0;}}
 .live-transcript{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 12px;margin:4px 0 8px;font-size:1.15rem;text-align:center;color:#1D4ED8;}
 .live-transcript-placeholder{text-align:center;color:var(--ink-faint);font-size:.85rem;margin:4px 0 8px;}
+.recog-status-line{text-align:center;font-size:.76rem;color:var(--ink-faint);margin:2px 0 6px;}
+.recog-status-line.warn{color:var(--wrong);font-weight:500;}
 .heard-line{text-align:center;font-size:1rem;color:var(--ink-soft);margin:10px 0 4px;}
 .heard-line .zh{font-size:1.15rem;color:var(--ink);font-weight:500;}
 .heard-line.faint{color:var(--ink-faint);font-size:.85rem;}
@@ -1311,12 +1313,19 @@ function renderSpeak(p) {
     const interimLine = MIC.interim
       ? `<div class="live-transcript">Hearing: <span class="zh">${MIC.interim}</span></div>`
       : `<div class="live-transcript-placeholder">Listening…</div>`;
+    const statusLabels = {
+      idle:'Starting…', listening:'Recognizer active', 'speech-detected':'Speech detected',
+      error:'Recognizer error: '+(MIC.recogError||'?'), ended:'Recognizer finishing…',
+      unsupported:'Speech recognition unavailable in this browser'
+    };
+    const statusLine = `<div class="recog-status-line${MIC.recogStatus==='error'||MIC.recogStatus==='unsupported'?' warn':''}">${statusLabels[MIC.recogStatus]||MIC.recogStatus}</div>`;
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Recording</div>
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
         <div class="speak-py speak-py-large">${p.py}</div>
       </div>
       <div class="mic-pulse-wrap"><div class="mic-pulse-ring"></div><div class="mic-pulse-icon">🎙</div></div>
+      ${statusLine}
       ${interimLine}
       <button class="mic-stop-btn" onclick="manualStopMic('${zhEsc}','${pyEsc}')">⏹ Done Speaking</button>
     </div>`;
@@ -1347,9 +1356,23 @@ function renderSpeak(p) {
       ? `<button class="playback-btn" id="playback-btn" onclick="playbackRecording()">🎧 Play back my recording</button>`
       : '';
 
+    // Speech recognition genuinely isn't producing a transcript yet even
+    // after switching to continuous:false, so this shows exactly which
+    // failure mode is occurring instead of guessing again — a single
+    // clear line, not the old full debug panel.
+    let noRecogReason = '';
+    if(!MIC.recogSupported){
+      noRecogReason = ' — speech recognition API not available in this browser/context';
+    } else if(MIC.recogError){
+      noRecogReason = ' — error: "' + MIC.recogError + '"';
+    } else if(MIC.recogStatus === 'idle'){
+      noRecogReason = ' — recognizer never started';
+    } else {
+      noRecogReason = ' — recognizer ran (status: ' + MIC.recogStatus + ') but returned no text';
+    }
     const heardLine = MIC.transcript
       ? `<div class="heard-line">Heard: <span class="zh" onclick="speakChinese('${MIC.transcript.replace(/'/g,"\\'")}')">${MIC.transcript}</span></div>`
-      : `<div class="heard-line faint">Nothing recognized${!MIC.recogSupported ? ' — speech recognition unavailable in this browser' : ''}</div>`;
+      : `<div class="heard-line faint">Nothing recognized${noRecogReason}</div>`;
 
     const actionHtml = perfectMatch
       ? `<div class="feedback-bar correct" style="margin-top:12px"><span class="feedback-icon">✅</span><div><div>Great match — nicely done!</div></div></div>
@@ -1458,11 +1481,18 @@ async function startMicSession(zhEsc, pyEsc) {
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     _micRecognizer=new SR();
     _micRecognizer.lang='zh-CN';
-    _micRecognizer.continuous=true;
+    // continuous:false is the reliable choice here — we want ONE phrase,
+    // graded once. continuous:true has known flakiness on Android Chrome:
+    // interim results can keep streaming but never get finalized when
+    // .stop() is called, so the transcript silently stays empty even
+    // though speech was clearly heard. continuous:false lets the
+    // recognizer use its own built-in silence-detection to end the
+    // utterance and reliably fire a final result before onend.
+    _micRecognizer.continuous=false;
     _micRecognizer.interimResults=true;
     _micRecognizer.maxAlternatives=1;
-    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; };
-    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; };
+    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; render(); };
+    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; render(); };
     _micRecognizer.onresult=e=>{
       let finalTxt='', interimTxt='';
       for(let i=0;i<e.results.length;i++){
@@ -1477,6 +1507,7 @@ async function startMicSession(zhEsc, pyEsc) {
       MIC.recogError=e.error||'unknown';
       MIC.recogStatus='error';
       console.warn('[speech] recognition error:', e.error, e.message||'');
+      render();
     };
     _micRecognizer.onend=()=>{
       MIC.recogStatus='ended';
