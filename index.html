@@ -234,21 +234,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .playback-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#EFF6FF;border:1.5px solid #BFDBFE;color:#1D4ED8;border-radius:10px;padding:10px 16px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;margin-top:10px;transition:all .15s;}
 .playback-btn:hover{background:#DBEAFE;}
 .playback-btn.playing{background:#DBEAFE;border-color:#93C5FD;}
-/* Transcript comparison — closeness coloring (5 tiers) */
+/* Transcript comparison — strict honest match/miss (2 states only) */
 .tc-char-col{display:inline-flex;flex-direction:column;align-items:center;margin:0 1px;}
-.tc-char{cursor:pointer;border-radius:4px;}
-.tc-char.sub{color:var(--ink);background:#F3F4F6;padding:0 2px;}
-.tc-char.close-tone{color:#0F766E;background:#CCFBF1;padding:0 2px;}
-.tc-char.close-sound{color:#92400E;background:#FEF3C7;padding:0 2px;}
-.tc-sub-hint{font-size:.6rem;color:var(--ink-faint);line-height:1;margin-top:1px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;}
+.tc-char{cursor:pointer;border-radius:4px;padding:0 2px;}
+.tc-char.match{color:var(--green);}
+.tc-char.miss{color:var(--wrong);text-decoration:underline;text-decoration-color:var(--wrong);}
+.tc-char.tc-blank{color:var(--ink-faint);cursor:default;}
+.tc-note{font-size:.58rem;color:var(--green);line-height:1;margin-top:1px;font-family:'DM Sans',sans-serif;}
 .tc-extra{font-size:.78rem;color:var(--ink-faint);margin-top:6px;text-align:center;}
 .tc-legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:8px;font-size:.68rem;color:var(--ink-faint);}
 .tc-leg-item{display:flex;align-items:center;gap:4px;}
 .tc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .tc-dot.good{background:var(--green);}
-.tc-dot.close-tone{background:#0F766E;}
-.tc-dot.close-sound{background:#CA8A04;}
-.tc-dot.ok{background:var(--ink);}
 .tc-dot.poor{background:var(--wrong);}
 .self-report-link{display:block;width:100%;background:none;border:none;color:var(--ink-faint);font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;text-decoration:underline;text-underline-offset:3px;padding:4px;}
 .self-report-link:hover{color:var(--ink-soft);}
@@ -259,9 +256,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .tc-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;font-size:.85rem;}
 .tc-label{color:var(--ink-faint);font-size:.76rem;width:60px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em;}
 .tc-chars{font-family:'Noto Sans SC',sans-serif;font-size:1.2rem;display:flex;flex-wrap:wrap;gap:2px;}
-.tc-char.match{color:var(--green);}
-.tc-char.miss{color:var(--wrong);text-decoration:underline;text-decoration-color:var(--wrong);}
-.tc-char.neutral{color:var(--ink-soft);}
 .tc-pct{font-size:.82rem;color:var(--ink-soft);text-align:center;margin-top:4px;}
 .speak-result-btns{display:flex;gap:10px;margin-top:14px;}
 .speak-result-btns .speak-correct{flex:1;}
@@ -1090,20 +1084,8 @@ function parsePinyinSyllables(py) {
 }
 
 // ── PLAYBACK ────────────────────────────────────────────────────────────
-function playbackRecording() {
-  if(!_playbackURL) return;
-  const btn=document.getElementById('playback-btn');
-  const existingAudio=document.getElementById('playback-audio');
-  if(existingAudio){ existingAudio.paused ? existingAudio.play() : (existingAudio.pause(),existingAudio.currentTime=0); return; }
-  const audio=new Audio(_playbackURL);
-  audio.id='playback-audio';
-  if(btn){ btn.classList.add('playing'); btn.textContent='⏹ Stop playback'; }
-  audio.play();
-  audio.onended=()=>{ if(btn){ btn.classList.remove('playing'); btn.innerHTML='🎧 Play back my recording'; } };
-  document.body.appendChild(audio);
-}
-
-// ── PINYIN ANALYSIS (tone-stripping + phonetic similarity) ─────────────
+// (Removed a duplicate earlier copy of this function that was leftover
+// from an earlier patch — dead code, but cleaned up for correctness.) (tone-stripping + phonetic similarity) ─────────────
 const TONE_MAP = {
   'ā':['a',1],'á':['a',2],'ǎ':['a',3],'à':['a',4],
   'ē':['e',1],'é':['e',2],'ě':['e',3],'è':['e',4],
@@ -1141,8 +1123,16 @@ function soundsSimilar(baseA,baseB){
 }
 
 // ── PLAYBACK ────────────────────────────────────────────────────────────
+// ── PLAYBACK ────────────────────────────────────────────────────────────
+let _playbackCooldown = false;
 function playbackRecording() {
   if(!_playbackURL) return;
+  // Defensive guard against a double-fire (mobile touch+click can
+  // sometimes register as two events for one tap).
+  if(_playbackCooldown) return;
+  _playbackCooldown = true;
+  setTimeout(()=>{ _playbackCooldown = false; }, 400);
+
   const btn=document.getElementById('playback-btn');
   const existingAudio=document.getElementById('playback-audio');
   if(existingAudio){ existingAudio.paused ? existingAudio.play() : (existingAudio.pause(),existingAudio.currentTime=0); return; }
@@ -1183,83 +1173,79 @@ function _alignChars(expArr, heardArr) {
   return ops.reverse();
 }
 
-// Closeness tiers, using pinyin (when both chars are in our dictionary):
-//  good       — same char, OR a different char with IDENTICAL pinyin+tone
-//               (a true homophone like 她/他 — this is NOT a pronunciation
-//               error, the recognizer just picked the "other" character
-//               that sounds identical, so it counts fully correct)
-//  closeTone  — same base syllable, different tone (e.g. mǎi vs mài)
-//  closeSound — different but phonetically similar syllable (shared
-//               initial + near-identical final, or vice versa)
-//  ok         — recognizer heard something at that slot but we can't
-//               positively confirm any similarity (unknown char, or a
-//               genuinely different sound) — benefit of the doubt
-//  poor       — nothing recognized there at all (deletion)
-const GRADE_WEIGHT = {good:1, closeTone:0.8, closeSound:0.6, ok:0.5, poor:0};
-
+// Grading is now strict and literal, per explicit feedback that the
+// previous tiered "closeness" scoring felt over-generous. The ONLY
+// exception is a true homophone (identical pinyin AND tone, different
+// character, e.g. 她/他) — that's not a leniency judgment, it's an
+// objective acoustic fact: the recognizer heard a sound that is by
+// definition indistinguishable from the correct one. Everything else —
+// wrong tone, similar-but-different syllable, anything — is marked
+// plainly as a mismatch. No partial credit.
 function compareTranscript(expected, heard) {
   const norm = s => [...s.replace(/[。，？！,.?!'" \r\n]/g,'')];
   const eArr = norm(expected), hArr = norm(heard||'');
   if(hArr.length===0){
-    return { expectedRow: eArr.map(ch=>({ch,grade:'poor'})), extras:[], pct:0, total:eArr.length||1 };
+    return { row: eArr.map(ch=>({e:ch, h:null, ok:false, homophone:false})), extras:[], pct:0, total:eArr.length||1 };
   }
   const ops=_alignChars(eArr,hArr);
-  const expectedRow=[]; const extras=[]; let weightSum=0;
+  const row=[]; const extras=[]; let matchCount=0;
   ops.forEach(op=>{
     if(op.type==='match'){
-      weightSum+=1; expectedRow.push({ch:op.e,grade:'good'});
+      matchCount++; row.push({e:op.e, h:op.h, ok:true, homophone:false});
     } else if(op.type==='sub'){
-      let grade='ok';
+      let homophone=false;
       const pyE=HANZI_PINYIN[op.e], pyH=HANZI_PINYIN[op.h];
       if(pyE && pyH){
         const {base:bE,tone:tE}=analyzePinyin(pyE), {base:bH,tone:tH}=analyzePinyin(pyH);
-        if(bE===bH && tE===tH) grade='good';
-        else if(bE===bH) grade='closeTone';
-        else if(soundsSimilar(bE,bH)) grade='closeSound';
+        if(bE===bH && tE===tH) homophone=true;
       }
-      weightSum+=GRADE_WEIGHT[grade];
-      expectedRow.push({ch:op.e, grade, heardCh:op.h});
+      if(homophone) matchCount++;
+      row.push({e:op.e, h:op.h, ok:homophone, homophone});
     } else if(op.type==='del'){
-      expectedRow.push({ch:op.e,grade:'poor'});
+      row.push({e:op.e, h:null, ok:false, homophone:false});
     } else if(op.type==='ins'){
       extras.push(op.h);
     }
   });
   const total=eArr.length||1;
-  const pct=Math.round(weightSum/total*100);
-  return {expectedRow, extras, pct, total};
+  const pct=Math.round(matchCount/total*100);
+  return {row, extras, pct, total};
 }
 
-// Each character is clickable — tap the (colored) expected character to
-// hear the correct pronunciation, tap the small hint character below a
-// mismatched one to hear what got recognized instead, so you can A/B
-// compare the two sounds directly.
+// Two plain rows — what the system actually heard, and what it was
+// supposed to be — so you can judge for yourself rather than the system
+// pre-deciding something "counts." Every character in both rows is
+// tappable to hear it.
 function renderTranscriptCompare(expected, heard) {
   if(!heard){
     return `<div class="transcript-compare"><div class="tc-pct" style="color:var(--ink-faint)">Nothing recognized — try again, speak a bit louder, or use "Self-report"</div></div>`;
   }
   const r = compareTranscript(expected, heard);
-  const gradeClass = {good:'match', closeTone:'close-tone', closeSound:'close-sound', ok:'sub', poor:'miss'};
-  const expHtml = r.expectedRow.map(item=>{
-    const cls = gradeClass[item.grade] || 'sub';
-    const eEsc = item.ch.replace(/'/g,"\\'");
-    const hint = (item.grade!=='good' && item.heardCh)
-      ? `<span class="tc-sub-hint" onclick="speakChinese('${item.heardCh.replace(/'/g,"\\'")}')">${item.heardCh}</span>` : '';
-    return `<span class="tc-char-col"><span class="tc-char ${cls}" onclick="speakChinese('${eEsc}')">${item.ch}</span>${hint}</span>`;
+  const heardHtml = r.row.map(item=>{
+    if(!item.h) return `<span class="tc-char-col"><span class="tc-char tc-blank">—</span></span>`;
+    const cls = item.ok ? 'match' : 'miss';
+    const hEsc = item.h.replace(/'/g,"\\'");
+    return `<span class="tc-char-col"><span class="tc-char ${cls}" onclick="speakChinese('${hEsc}')">${item.h}</span></span>`;
   }).join('');
+  const expHtml = r.row.map(item=>{
+    const cls = item.ok ? 'match' : 'miss';
+    const eEsc = item.e.replace(/'/g,"\\'");
+    const note = item.homophone ? `<span class="tc-note">same sound</span>` : '';
+    return `<span class="tc-char-col"><span class="tc-char ${cls}" onclick="speakChinese('${eEsc}')">${item.e}</span>${note}</span>`;
+  }).join('');
+  const extraEsc = r.extras.join('').replace(/'/g,"\\'");
   const extraHtml = r.extras.length
-    ? `<div class="tc-extra">+ also heard: <span class="zh">${r.extras.join('')}</span></div>` : '';
+    ? `<div class="tc-extra">+ also heard: <span class="zh" onclick="speakChinese('${extraEsc}')">${r.extras.join('')}</span></div>` : '';
   return `<div class="transcript-compare">
+    <div class="tc-row"><span class="tc-label">Heard</span><span class="tc-chars">${heardHtml}</span></div>
     <div class="tc-row"><span class="tc-label">Expected</span><span class="tc-chars">${expHtml}</span></div>
     ${extraHtml}
-    <div class="tc-pct"><strong>${r.pct}%</strong> close match</div>
+    <div class="tc-pct"><strong>${r.pct}%</strong> exact match</div>
     <div class="tc-legend">
-      <span class="tc-leg-item"><span class="tc-dot good"></span>matched</span>
-      <span class="tc-leg-item"><span class="tc-dot close-tone"></span>close (tone)</span>
-      <span class="tc-leg-item"><span class="tc-dot close-sound"></span>close (sound)</span>
-      <span class="tc-leg-item"><span class="tc-dot poor"></span>not heard</span>
+      <span class="tc-leg-item"><span class="tc-dot good"></span>matched (same sound)</span>
+      <span class="tc-leg-item"><span class="tc-dot poor"></span>different / not heard</span>
     </div>
-    <div style="font-size:.72rem;color:var(--ink-faint);text-align:center;margin-top:4px">Tap a character to hear it — tap the small hint below a colored one to compare</div>
+    <div style="font-size:.72rem;color:var(--ink-faint);text-align:center;margin-top:4px">Tap any character in either row to hear it and compare for yourself</div>
   </div>`;
 }
 
@@ -1310,15 +1296,15 @@ function renderSpeak(p) {
 
   // ── LISTENING — simple pulsing mic icon, no jumpy visuals ──
   if(MIC.phase==='listening'){
-    const interimLine = MIC.interim
-      ? `<div class="live-transcript">Hearing: <span class="zh">${MIC.interim}</span></div>`
-      : `<div class="live-transcript-placeholder">Listening…</div>`;
     const statusLabels = {
       idle:'Starting…', listening:'Recognizer active', 'speech-detected':'Speech detected',
       error:'Recognizer error: '+(MIC.recogError||'?'), ended:'Recognizer finishing…',
       unsupported:'Speech recognition unavailable in this browser'
     };
     const statusLine = `<div class="recog-status-line${MIC.recogStatus==='error'||MIC.recogStatus==='unsupported'?' warn':''}">${statusLabels[MIC.recogStatus]||MIC.recogStatus}</div>`;
+    // Single fixed element, id="interim-text" — updated via direct DOM
+    // writes from onresult (not full render()) so live text doesn't
+    // cause the whole card to flash while you're talking.
     return `<div class="prompt-card pop-in"><div class="prompt-type-label">🎙 Speak Aloud — Recording</div>
       <div class="speak-main">
         <div class="speak-zh" onclick="speakChinese('${zhEsc}')">${p.zh}</div>
@@ -1326,7 +1312,7 @@ function renderSpeak(p) {
       </div>
       <div class="mic-pulse-wrap"><div class="mic-pulse-ring"></div><div class="mic-pulse-icon">🎙</div></div>
       ${statusLine}
-      ${interimLine}
+      <div class="live-transcript" id="interim-text">${MIC.interim ? 'Hearing: '+MIC.interim : 'Listening…'}</div>
       <button class="mic-stop-btn" onclick="manualStopMic('${zhEsc}','${pyEsc}')">⏹ Done Speaking</button>
     </div>`;
   }
@@ -1359,12 +1345,17 @@ function renderSpeak(p) {
     // Speech recognition genuinely isn't producing a transcript yet even
     // after switching to continuous:false, so this shows exactly which
     // failure mode is occurring instead of guessing again — a single
-    // clear line, not the old full debug panel.
+    // clear line, not the old full debug panel. Also flags whether this
+    // is running as an installed home-screen app (standalone) vs a
+    // normal browser tab — some Android WebView/TWA contexts used by
+    // installed PWAs lack full SpeechRecognition support even when the
+    // exact same URL works fine in a regular Chrome tab.
+    const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
     let noRecogReason = '';
     if(!MIC.recogSupported){
-      noRecogReason = ' — speech recognition API not available in this browser/context';
+      noRecogReason = ' — speech recognition API not available in this browser/context' + (isStandalone ? ' (running as installed app — try opening the same link in a regular Chrome tab instead to compare)' : '');
     } else if(MIC.recogError){
-      noRecogReason = ' — error: "' + MIC.recogError + '"';
+      noRecogReason = ' — error: "' + MIC.recogError + '"' + (isStandalone ? ' (running as installed app)' : '');
     } else if(MIC.recogStatus === 'idle'){
       noRecogReason = ' — recognizer never started';
     } else {
@@ -1501,7 +1492,14 @@ async function startMicSession(zhEsc, pyEsc) {
       }
       if(finalTxt) MIC.transcript=(MIC.transcript||'')+finalTxt;
       MIC.interim=interimTxt;
-      render();
+      // FIX: interim results can fire many times per second while you
+      // talk. Calling full render() on every one of them rebuilds the
+      // whole card's DOM repeatedly, which is what was causing the
+      // flashing. Update just the one live-text element directly instead
+      // — only a genuine phase change (handled elsewhere) triggers a
+      // real render().
+      const interimEl = document.getElementById('interim-text');
+      if(interimEl) interimEl.textContent = interimTxt ? ('Hearing: ' + interimTxt) : 'Listening…';
     };
     _micRecognizer.onerror=e=>{
       MIC.recogError=e.error||'unknown';
