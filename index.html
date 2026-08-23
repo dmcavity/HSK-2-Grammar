@@ -993,7 +993,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'C1';
+const APP_BUILD = 'C2';
 
 // ── SPEECH (browser-native synthesis only) ────────────────────────────
 // Google Translate TTS has been removed entirely. Two reasons it could
@@ -1014,55 +1014,111 @@ let _voicesLoaded = false;
 function _loadVoices() {
   if (!window.speechSynthesis) return;
   const vs = window.speechSynthesis.getVoices();
-  if (!vs || !vs.length) return;          // not populated yet
+  if (!vs || !vs.length) return;
   _zhVoice =
-      vs.find(v => /^zh[-_]CN/i.test(v.lang))            // Mainland Mandarin
-   || vs.find(v => /^zh[-_](SG|Hans)/i.test(v.lang))     // other Simplified
-   || vs.find(v => /^zh/i.test(v.lang))                  // any Chinese
+      vs.find(v => /^zh[-_]CN/i.test(v.lang))
+   || vs.find(v => /^zh[-_](SG|Hans)/i.test(v.lang))
+   || vs.find(v => /^zh/i.test(v.lang))
    || null;
   _voicesLoaded = true;
   if (!_zhVoice) console.warn('[speech] No Chinese voice installed on this device.');
 }
 if (window.speechSynthesis) {
-  _loadVoices();                                   // may be empty on first call
-  window.speechSynthesis.onvoiceschanged = _loadVoices;   // fires when ready
+  _loadVoices();
+  window.speechSynthesis.onvoiceschanged = _loadVoices;
 }
 
-function hasChineseVoice() { return !!_zhVoice; }
+// BUG FIX 1 — GARBAGE COLLECTION.
+// Chrome (especially on Android) collects a SpeechSynthesisUtterance
+// that has no remaining live reference. The previous code created the
+// utterance as a `const` inside a setTimeout closure; the moment
+// speak() returned and the closure exited, nothing referenced it. The
+// engine then lost it mid-playback: SHORT phrases (like 是) were
+// collected before audio even began — total silence — and longer ones
+// were cut off partway. Holding a reference until the utterance
+// actually finishes is mandatory, not defensive.
+const _liveUtterances = new Set();
+function _keepAlive(u) {
+  _liveUtterances.add(u);
+  const release = () => _liveUtterances.delete(u);
+  u.onend = release;
+  u.onerror = release;
+}
+
+// BUG FIX 2 — ENGINE PRIMING.
+// The very first utterance after page load has its opening swallowed
+// while the platform TTS engine spins up. Speaking one silent utterance
+// on the first user gesture absorbs that penalty so real content is
+// never the thing that gets truncated.
+let _ttsPrimed = false;
+function _primeTTS() {
+  if (_ttsPrimed || !window.speechSynthesis) return;
+  _ttsPrimed = true;
+  try {
+    const u = new SpeechSynthesisUtterance('\u00A0');
+    u.volume = 0;
+    _keepAlive(u);
+    window.speechSynthesis.speak(u);
+  } catch(e) {}
+}
+document.addEventListener('touchstart', _primeTTS, {once:true, passive:true});
+document.addEventListener('click', _primeTTS, {once:true});
+document.addEventListener('keydown', _primeTTS, {once:true});
 
 let _speakSeq = 0;
 let _lastSpeakText = '';
 let _lastSpeakAt = 0;
 
+// Stop any speech and invalidate queued requests. Used before starting
+// the microphone so TTS output can't collide with recognition.
+function stopSpeaking() {
+  if (!window.speechSynthesis) return;
+  _speakSeq++;                       // invalidates pending speak timers
+  _lastSpeakText = '';               // don't let dedupe block the next call
+  try {
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+  } catch(e) {}
+}
+
 function speakChinese(text) {
   if (!text || !window.speechSynthesis) return;
+  const synth = window.speechSynthesis;
 
-  // Collapse a repeat request for the SAME phrase within 400ms. Guards
-  // against a stray duplicate event (mobile touch+click) or two code
-  // paths both asking for the same audio — either would otherwise be
-  // heard as the phrase playing twice.
   const now = Date.now();
   if (text === _lastSpeakText && now - _lastSpeakAt < 400) return;
   _lastSpeakText = text;
   _lastSpeakAt = now;
 
+  _primeTTS();
   const seq = ++_speakSeq;
-  try { window.speechSynthesis.cancel(); } catch(e) {}
 
-  // Chrome silently drops an utterance when speak() is called in the
-  // same tick as cancel(); a short gap makes it reliable.
+  // BUG FIX 3 — CONDITIONAL CANCEL.
+  // The previous code called cancel() on EVERY request, including when
+  // nothing was playing. On Android Chrome a cancel() against an idle
+  // engine leaves it in a state that clips the start of the next
+  // utterance — which is why 我是 kept losing its opening. Only cancel
+  // when there is genuinely something to interrupt.
+  const busy = synth.speaking || synth.pending;
+  if (busy) { try { synth.cancel(); } catch(e) {} }
+
   setTimeout(() => {
-    if (seq !== _speakSeq) return;        // superseded by a newer request
-    if (!_voicesLoaded) _loadVoices();    // late-populating voice list
+    if (seq !== _speakSeq) return;
+    if (!_voicesLoaded) _loadVoices();
     try {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'zh-CN';
       if (_zhVoice) u.voice = _zhVoice;
       u.rate = 0.85;
-      window.speechSynthesis.speak(u);
+      _keepAlive(u);                 // survives until it finishes
+      synth.speak(u);
     } catch(e) { console.warn('[speech] speak failed:', e); }
-  }, 70);
+  }, busy ? 140 : 20);
 }
+
+function hasChineseVoice() { return !!_zhVoice; }
+
 
 
 // ── MIC / SPEECH GLOBALS ─────────────────────────────────────────────
@@ -1094,6 +1150,28 @@ function parsePinyinSyllables(py) {
 // Edit-distance alignment (not naive positional matching) — a single
 // dropped/extra character no longer cascades into everything after it
 // showing wrong.
+// ── PINYIN ANALYSIS (tone stripping, for homophone detection) ─────────
+// Restored: compareTranscript() calls analyzePinyin() to decide whether a
+// substituted character is a true homophone (她/他). These helpers were
+// accidentally removed when the TTS block above was rewritten, which made
+// the results comparison throw and the heard/expected display vanish.
+const TONE_MAP = {
+  '\u0101':['a',1],'\u00e1':['a',2],'\u01ce':['a',3],'\u00e0':['a',4],
+  '\u0113':['e',1],'\u00e9':['e',2],'\u011b':['e',3],'\u00e8':['e',4],
+  '\u012b':['i',1],'\u00ed':['i',2],'\u01d0':['i',3],'\u00ec':['i',4],
+  '\u014d':['o',1],'\u00f3':['o',2],'\u01d2':['o',3],'\u00f2':['o',4],
+  '\u016b':['u',1],'\u00fa':['u',2],'\u01d4':['u',3],'\u00f9':['u',4],
+  '\u01d6':['\u00fc',1],'\u01d8':['\u00fc',2],'\u01da':['\u00fc',3],'\u01dc':['\u00fc',4],
+};
+function analyzePinyin(py) {
+  let base='', tone=0;
+  for (const ch of py) {
+    if (TONE_MAP[ch]) { base += TONE_MAP[ch][0]; tone = TONE_MAP[ch][1]; }
+    else base += ch;
+  }
+  return {base, tone};
+}
+
 function _alignChars(expArr, heardArr) {
   const n=expArr.length, m=heardArr.length;
   const dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
@@ -1394,6 +1472,13 @@ function _setInterimText(txt) {
 }
 
 function startMicSession(zhEsc, pyEsc) {
+  // The lesson auto-speaks the phrase when the prompt opens. If that
+  // audio is still playing (or queued) when recognition starts, Android
+  // hands the audio route to synthesis and the recognizer receives
+  // nothing — it then ends cleanly with an empty result. Silence TTS
+  // first, and give the route a moment to release.
+  stopSpeaking();
+
   _pendingPy = pyEsc;
   MIC = {phase:'requesting', transcript:'', interim:'', lastInterim:'',
          recogStatus:'idle', recogError:'', error:''};
@@ -1446,18 +1531,24 @@ function startMicSession(zhEsc, pyEsc) {
   MIC.phase = 'listening';
   render();
 
-  try {
-    rec.start();
-  } catch (err) {
-    MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
-    MIC.recogStatus = 'error';
-    console.warn('[speech] start() threw:', err);
-    _finalizeRecognition();
-    return;
-  }
+  // Small delay lets the audio route settle after stopSpeaking().
+  setTimeout(() => {
+    if (MIC.phase !== 'listening') return;
+    try {
+      rec.start();
+    } catch (err) {
+      MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
+      MIC.recogStatus = 'error';
+      console.warn('[speech] start() threw:', err);
+      _finalizeRecognition();
+    }
+  }, 250);
 
   // Safety cap so a stuck session can't hang forever.
   setTimeout(() => { if (MIC.phase === 'listening') manualStopMic(); }, 12000);
+  // Hard backstop: if onend never fires (observed on some Android
+  // builds), finalize anyway so the results screen always appears.
+  setTimeout(() => { if (MIC.phase === 'listening') _finalizeRecognition(); }, 15000);
 }
 
 // "Done Speaking". stop() asks the recognizer to finalize what it has;
@@ -1467,7 +1558,10 @@ function startMicSession(zhEsc, pyEsc) {
 function manualStopMic(zhEsc, pyEsc) {
   if (_micRecognizer) {
     try { _micRecognizer.stop(); }
-    catch (e) { _finalizeRecognition(); }
+    catch (e) { _finalizeRecognition(); return; }
+    // stop() should trigger onend; if it doesn't within 1.5s, finalize
+    // ourselves rather than leaving the user stuck on the record screen.
+    setTimeout(() => { if (!_recogFinalized) _finalizeRecognition(); }, 1500);
   } else {
     _finalizeRecognition();
   }
