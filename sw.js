@@ -1,51 +1,64 @@
 // Service Worker for 普通话 HSK 2 Grammar Journey
-// Cache-first for app shell; network-first for audio (TTS)
+// v2: bumped cache name to force all existing installs to drop their old
+// (possibly broken/outdated) cached copy. Also switched the main HTML
+// document to network-first — previously it was cache-first, meaning a
+// device that visited once during earlier testing could get stuck
+// serving a stale, buggy snapshot indefinitely, since sw.js itself
+// hadn't changed and browsers only re-check a service worker when its
+// own bytes change.
 
-const CACHE_NAME = 'hsk2-v1';
+const CACHE_NAME = 'hsk2-v2';
 const CACHE_URLS = [
-  './',
-  './index.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  // Google Fonts — cached on first load so app works offline after
   'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap',
 ];
 
-// ── Install: cache app shell ──────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // Cache what we can; don't fail install if a resource can't be cached
-      return Promise.allSettled(
-        CACHE_URLS.map(url =>
-          cache.add(url).catch(err => console.warn('[SW] Could not cache:', url, err))
-        )
-      );
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(
+        CACHE_URLS.map(url => cache.add(url).catch(err => console.warn('[SW] Could not cache:', url, err)))
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: clean up old caches ────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch strategy ────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Google TTS audio: network only (dynamic, can't precache)
-  // Falls back gracefully if offline — the app falls back to browser TTS
+  // Google TTS audio: network only, never cached (dynamic content)
   if (url.hostname === 'translate.googleapis.com' || url.hostname === 'translate.google.com') {
     event.respondWith(fetch(event.request).catch(() => Response.error()));
+    return;
+  }
+
+  // The HTML document itself (navigations, and index.html directly):
+  // NETWORK-FIRST. Always try to get the freshest version when online;
+  // only fall back to a cached copy if genuinely offline. This is the
+  // fix for "stuck on an old broken version" — cache-first previously
+  // meant updates could silently never reach a returning visitor.
+  const isHTMLDoc = event.request.mode === 'navigate' ||
+                     url.pathname.endsWith('/') ||
+                     url.pathname.endsWith('index.html');
+  if (isHTMLDoc) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
     return;
   }
 
@@ -65,7 +78,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Everything else (app shell): cache-first
+  // Everything else (icons, manifest): cache-first
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
