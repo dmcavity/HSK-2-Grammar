@@ -991,7 +991,11 @@ const LESSONS = [
   {t:'multi',parts:['他',{id:'A'},'喝茶',{id:'B'},'把书',{id:'C'},'完了。'],bank:['一边','一边','看'],answers:{A:'一边',B:'一边',C:'看'},en:'He finished reading the book while drinking tea.'},
   {t:'tr',zh:'因为他把作业做完了，所以可以出去玩了。',py:'Yīnwèi tā bǎ zuòyè zuò wán le, suǒyǐ kěyǐ chūqù wán le.',ans:'Because he finished his homework, he can go out and play.',opts:['Because he finished his homework, he can go out and play.',"Although he finished his homework, he can't go out.",'If he finishes his homework, he can play.','He went out to play, so his homework is done.']},
 ]}
-]; // end LESSONS// ── TTS (Google Translate neural voice + browser fallback) ──────────
+]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
+// whether the browser is running the newest code or a stale cached copy.
+const APP_BUILD = 'B7';
+
+// ── TTS (Google Translate neural voice + browser fallback) ──────────
 // FIX: reuse ONE persistent Audio element for every play, instead of
 // creating a fresh Audio() each call. Mobile browsers pay a "cold audio
 // route" warm-up penalty (eating the first fraction-of-a-second of
@@ -1021,31 +1025,40 @@ document.addEventListener('touchstart', _unlockAudioOnce, {once:true, passive:tr
 document.addEventListener('click', _unlockAudioOnce, {once:true});
 document.addEventListener('keydown', _unlockAudioOnce, {once:true});
 
+let _ttsToken = 0;
+let _ttsFallbackTimer = null;
 function speakChinese(text) {
   if (!text) return;
   _unlockAudioOnce();   // establishes _ttsAudio + warms it if this is the very first call
   try {
     const audio = _getTTSAudio();
     audio.pause();
+
+    // Cancel any pending fallback timer from a PREVIOUS call — otherwise
+    // an older timer could fire against the new source and start a second
+    // overlapping playback. Each call also gets a token so late callbacks
+    // belonging to a superseded call are ignored.
+    if (_ttsFallbackTimer) { clearTimeout(_ttsFallbackTimer); _ttsFallbackTimer = null; }
+    const myToken = ++_ttsToken;
+
     const url = 'https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=' + encodeURIComponent(text);
     let played = false;
     const doPlay = () => {
-      if (played) return; played = true;
+      if (played || myToken !== _ttsToken) return;
+      played = true;
+      // Detach the handler immediately. Because the SAME audio element is
+      // reused for every phrase, leaving oncanplay attached meant a later
+      // buffering event on the same source could re-invoke it and play the
+      // clip a second time — the duplicate-playback bug.
+      audio.oncanplay = null;
       audio.play().catch(() => _browserSpeak(text));
     };
-    // FIX: wait for the browser to confirm it actually has enough audio
-    // buffered ('canplay') before starting playback. Calling play()
-    // immediately after load() — with zero buffer — was the real bug:
-    // the element starts "playing" against an empty buffer, and the
-    // opening fraction-of-a-second of real audio gets lost by the time
-    // any data arrives. This was clipping audio on desktop Chrome too,
-    // not just mobile, which is why the mobile-only "hardware warm-up"
-    // theory alone wasn't the full explanation.
     audio.oncanplay = doPlay;
-    audio.onerror = () => { if(!played) _browserSpeak(text); };
+    audio.onerror = () => { if(!played && myToken === _ttsToken) _browserSpeak(text); };
     audio.src = url;
     audio.load();
-    setTimeout(() => { if(!played) doPlay(); }, 2500);   // slow-network fallback
+    // Slow-network fallback (tracked so it can be cancelled above).
+    _ttsFallbackTimer = setTimeout(() => { doPlay(); }, 2500);
   } catch(e) { _browserSpeak(text); }
 }
 function _browserSpeak(text) {
@@ -1301,7 +1314,7 @@ function renderSpeak(p) {
       error:'Recognizer error: '+(MIC.recogError||'?'), ended:'Recognizer finishing…',
       unsupported:'Speech recognition unavailable in this browser'
     };
-    const statusLine = `<div class="recog-status-line${MIC.recogStatus==='error'||MIC.recogStatus==='unsupported'?' warn':''}">${statusLabels[MIC.recogStatus]||MIC.recogStatus}</div>`;
+    const statusLine = `<div class="recog-status-line${MIC.recogStatus==='error'||MIC.recogStatus==='unsupported'?' warn':''}" id="recog-status">${statusLabels[MIC.recogStatus]||MIC.recogStatus}</div>`;
     // Single fixed element, id="interim-text" — updated via direct DOM
     // writes from onresult (not full render()) so live text doesn't
     // cause the whole card to flash while you're talking.
@@ -1482,8 +1495,17 @@ async function startMicSession(zhEsc, pyEsc) {
     _micRecognizer.continuous=false;
     _micRecognizer.interimResults=true;
     _micRecognizer.maxAlternatives=1;
-    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; render(); };
-    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; render(); };
+    // Status updates write directly to the DOM instead of calling
+    // render() — a full re-render swaps out the whole card (including
+    // the pulsing mic element), which is visible as a jump/flash. These
+    // fire at unpredictable moments while you're speaking, so none of
+    // them may trigger a rebuild.
+    const _setRecogStatus = (txt, isWarn) => {
+      const el = document.getElementById('recog-status');
+      if(el){ el.textContent = txt; el.className = 'recog-status-line' + (isWarn ? ' warn' : ''); }
+    };
+    _micRecognizer.onstart=()=>{ MIC.recogStatus='listening'; _setRecogStatus('Recognizer active', false); };
+    _micRecognizer.onspeechstart=()=>{ MIC.recogStatus='speech-detected'; _setRecogStatus('Speech detected', false); };
     _micRecognizer.onresult=e=>{
       let finalTxt='', interimTxt='';
       for(let i=0;i<e.results.length;i++){
@@ -1492,12 +1514,8 @@ async function startMicSession(zhEsc, pyEsc) {
       }
       if(finalTxt) MIC.transcript=(MIC.transcript||'')+finalTxt;
       MIC.interim=interimTxt;
-      // FIX: interim results can fire many times per second while you
-      // talk. Calling full render() on every one of them rebuilds the
-      // whole card's DOM repeatedly, which is what was causing the
-      // flashing. Update just the one live-text element directly instead
-      // — only a genuine phase change (handled elsewhere) triggers a
-      // real render().
+      // Interim results fire many times per second while you talk —
+      // update only the one live-text element, never a full render().
       const interimEl = document.getElementById('interim-text');
       if(interimEl) interimEl.textContent = interimTxt ? ('Hearing: ' + interimTxt) : 'Listening…';
     };
@@ -1505,7 +1523,7 @@ async function startMicSession(zhEsc, pyEsc) {
       MIC.recogError=e.error||'unknown';
       MIC.recogStatus='error';
       console.warn('[speech] recognition error:', e.error, e.message||'');
-      render();
+      _setRecogStatus('Recognizer error: ' + MIC.recogError, true);
     };
     _micRecognizer.onend=()=>{
       MIC.recogStatus='ended';
@@ -1714,7 +1732,7 @@ function renderHome() {
       ${score}</div>`;
   }).join('');
   return `<div class="home fade-in">
-    <div class="home-header"><div class="home-title">普通话</div><div class="home-sub">HSK 2 Grammar Journey · 10 Lessons</div></div>
+    <div class="home-header"><div class="home-title">普通话</div><div class="home-sub">HSK 2 Grammar Journey · 10 Lessons</div><div style="font-size:.7rem;color:var(--ink-faint);margin-top:4px;">build ${APP_BUILD}</div></div>
     <div class="progress-banner">
       <svg class="progress-ring" viewBox="0 0 64 64">
         <circle cx="32" cy="32" r="26" fill="none" stroke="#F0E8E8" stroke-width="6"/>
@@ -2173,6 +2191,34 @@ function checkWordOrder() {
   S.answered=true; S.lastCorrect=(user===correct); S.scoredTotal++; if(S.lastCorrect) S.correct++;
   if(S.lastCorrect) speakChinese(correct);
   commitState(); render();
+}
+
+// ── SERVICE WORKER ────────────────────────────────────────────────────
+// (This registration was accidentally dropped during an earlier rewrite,
+// which meant devices kept running whatever service worker they had
+// previously installed — a likely reason fixes appeared not to take
+// effect. Restored here, with automatic reload when a new version
+// activates so updates land without manual cache clearing.)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        // Check for an update on every load.
+        reg.update().catch(()=>{});
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            // A new worker took over and an old one was controlling the
+            // page — reload once so the fresh code is actually running.
+            if (nw.state === 'activated' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[SW] registration failed:', err));
+  });
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
