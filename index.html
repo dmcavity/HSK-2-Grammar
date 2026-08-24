@@ -1015,7 +1015,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'C6';
+const APP_BUILD = 'C7';
 
 // ── SPEECH (browser-native synthesis only) ────────────────────────────
 // Google Translate TTS has been removed entirely. Two reasons it could
@@ -1187,6 +1187,7 @@ function hasChineseVoice() { return !!_zhVoice; }
 // These live outside S (non-serialisable — AudioContext, MediaStream, RAF)
 let MIC = { phase:'idle', transcript:'', interim:'', lastInterim:'', recogStatus:'idle', recogError:'', error:'' };
 let _recogFinalized = false;
+let _restartCount = 0;
 let _micRecognizer=null, _pendingPy='';
 // Recording (for "play back my recording"). Restored: an earlier change
 // removed these on the theory that MediaRecorder and SpeechRecognition
@@ -1609,6 +1610,7 @@ async function startMicSession(zhEsc, pyEsc) {
 
   _pendingPy = pyEsc;
   MIC = {phase:'requesting', transcript:'', interim:'', lastInterim:'',
+         committed:'', segment:'', expected:'', userStopped:false,
          recogStatus:'idle', recogError:'', error:''};
   render();
 
@@ -1662,14 +1664,37 @@ async function startMicSession(zhEsc, pyEsc) {
     return;
   }
 
+  // The session stays open until the user taps "Done Speaking".
+  // Chrome's recognizer, with continuous:false, ends by itself after a
+  // short pause in speech — which is why the screen used to jump away
+  // mid-sentence. We keep it listening by restarting it whenever it
+  // ends on its own, and only finish early on a 100% match.
+  MIC.expected = zhEsc;          // for the perfect-match check
+  MIC.userStopped = false;
+  MIC.committed = '';            // text confirmed in earlier segments
+  _restartCount = 0;
+
+  _buildRecognizer(SR);
+
+  // Overall cap so a forgotten session can't run forever.
+  setTimeout(() => { if (MIC.phase === 'listening') { MIC.userStopped = true; _finalizeSession(); } }, 90000);
+}
+
+// Creates (or re-creates) the recognizer. Called again each time Chrome
+// ends a listening segment on its own while the user is still speaking.
+function _buildRecognizer(SR) {
   const rec = new SR();
   _micRecognizer = rec;
   rec.lang = 'zh-CN';
-  rec.continuous = false;      // one utterance, graded once
-  rec.interimResults = true;   // live text + a fallback if no final arrives
+  rec.continuous = false;      // Chrome is most reliable in this mode;
+                               // we handle continuity by restarting.
+  rec.interimResults = true;
   rec.maxAlternatives = 1;
 
-  rec.onstart = () => { MIC.recogStatus='listening'; _setRecogStatus('Listening — speak now', false); };
+  rec.onstart = () => {
+    MIC.recogStatus = 'listening';
+    _setRecogStatus('Listening — tap "Done Speaking" when finished', false);
+  };
   rec.onspeechstart = () => { MIC.recogStatus='speech'; _setRecogStatus('Speech detected', false); };
 
   rec.onresult = (e) => {
@@ -1678,20 +1703,54 @@ async function startMicSession(zhEsc, pyEsc) {
       const t = e.results[i][0].transcript || '';
       if (e.results[i].isFinal) fin += t; else inter += t;
     }
-    if (fin) MIC.transcript = fin;
-    if (inter) MIC.lastInterim = inter;
+    // Text from earlier segments plus this segment's result.
+    MIC.segment = fin;
+    MIC.transcript = (MIC.committed || '') + (fin || '');
+    if (inter) MIC.lastInterim = (MIC.committed || '') + inter;
     MIC.interim = inter;
-    _setInterimText(MIC.transcript || inter);
+    _setInterimText(MIC.transcript || MIC.lastInterim);
   };
 
   rec.onerror = (e) => {
     MIC.recogError = e.error || 'unknown';
     MIC.recogStatus = 'error';
     console.warn('[speech] error:', e.error);
-    _setRecogStatus('Error: ' + MIC.recogError, true);
+    // 'no-speech' just means a quiet stretch — not worth alarming the
+    // user while they're still deciding what to say.
+    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      _setRecogStatus('Error: ' + MIC.recogError, true);
+    }
   };
 
-  rec.onend = () => { _finalizeSession(); };
+  rec.onend = () => {
+    // The user asked to stop, or we're already wrapping up.
+    if (MIC.userStopped || _recogFinalized || MIC.phase !== 'listening') {
+      _finalizeSession();
+      return;
+    }
+    // Bank this segment's text before restarting.
+    if (MIC.segment) { MIC.committed = (MIC.committed || '') + MIC.segment; MIC.segment = ''; }
+    MIC.transcript = MIC.committed;
+
+    // Only auto-finish early on a perfect match.
+    if (MIC.transcript && MIC.expected) {
+      try {
+        const r = compareTranscript(MIC.expected, MIC.transcript);
+        if (r.pct >= 100) { _finalizeSession(); return; }
+      } catch(err) {}
+    }
+
+    // Otherwise keep listening.
+    if (_restartCount >= 40) { _finalizeSession(); return; }
+    _restartCount++;
+    setTimeout(() => {
+      if (MIC.userStopped || _recogFinalized || MIC.phase !== 'listening') { _finalizeSession(); return; }
+      const SRC = _speechAPI();
+      if (!SRC) { _finalizeSession(); return; }
+      try { _buildRecognizer(SRC); }
+      catch(err) { console.warn('[speech] restart failed:', err); _finalizeSession(); }
+    }, 250);
+  };
 
   try {
     rec.start();
@@ -1699,21 +1758,21 @@ async function startMicSession(zhEsc, pyEsc) {
     MIC.recogError = 'start-failed: ' + (err.message || err.name || 'unknown');
     console.warn('[speech] start() threw:', err);
     _setRecogStatus('Could not start recognizer', true);
-    // Recognition failed, but the recorder may still be running — let the
-    // user finish and at least keep their recording.
   }
-
-  // Safety caps.
-  setTimeout(() => { if (MIC.phase === 'listening' && _micRecognizer) { try { _micRecognizer.stop(); } catch(e) {} } }, 10000);
-  setTimeout(() => { if (MIC.phase === 'listening') _finalizeSession(); }, 13000);
 }
 
 // "Done Speaking"
 function manualStopMic(zhEsc, pyEsc) {
+  // Marks the stop as intentional so onend finalizes instead of
+  // restarting the recognizer.
+  MIC.userStopped = true;
+  // Fold in whatever the current segment heard.
+  if (MIC.segment) { MIC.committed = (MIC.committed || '') + MIC.segment; MIC.segment = ''; }
+  if (MIC.committed) MIC.transcript = MIC.committed;
+
   if (_micRecognizer) {
     try { _micRecognizer.stop(); }
     catch(e) { _finalizeSession(); return; }
-    // stop() should trigger onend; finalize ourselves if it doesn't.
     setTimeout(() => { if (!_recogFinalized) _finalizeSession(); }, 1500);
   } else {
     _finalizeSession();
@@ -1772,7 +1831,9 @@ function resetMic() {
   const old = document.getElementById('playback-audio');
   if (old) { old.pause(); old.remove(); }
   _recogFinalized = true;
+  _restartCount = 0;
   MIC = {phase:'idle', transcript:'', interim:'', lastInterim:'',
+         committed:'', segment:'', expected:'', userStopped:false,
          recogStatus:'idle', recogError:'', error:''};
 }
 
