@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>普通话 · HSK 2 Grammar Journey</title>
+<!-- PWA: makes the app installable to the home screen.
+     These tags were lost during an earlier rewrite of this file, which
+     is why the install option disappeared even though manifest.json,
+     sw.js and the icons were all still present in the repo. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HSK 2">
+<meta name="application-name" content="HSK 2">
+<meta name="theme-color" content="#C0392B">
+<meta name="description" content="Interactive HSK 2 Mandarin grammar lessons with audio, speech practice and spaced repetition.">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -247,6 +261,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .tc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .tc-dot.good{background:var(--green);}
 .tc-dot.poor{background:var(--wrong);}
+.install-btn{width:100%;background:var(--card);border:2px dashed var(--red);color:var(--red);border-radius:var(--r);padding:13px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:16px;transition:all .15s;}
+.install-btn:hover{background:var(--red-light);border-style:solid;}
 .rec-toggle{display:flex;align-items:flex-start;gap:8px;margin-top:12px;cursor:pointer;user-select:none;padding:8px 10px;border-radius:10px;background:#FAF3F4;}
 .rec-toggle:hover{background:#F4EBEC;}
 .rec-toggle-box{flex-shrink:0;width:18px;height:18px;border-radius:5px;border:2px solid #C8B8BC;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff;background:#fff;margin-top:1px;}
@@ -999,7 +1015,7 @@ const LESSONS = [
 ]}
 ]; // end LESSONS// Build marker — shown on the home screen so you can instantly confirm
 // whether the browser is running the newest code or a stale cached copy.
-const APP_BUILD = 'C5';
+const APP_BUILD = 'C6';
 
 // ── SPEECH (browser-native synthesis only) ────────────────────────────
 // Google Translate TTS has been removed entirely. Two reasons it could
@@ -1917,6 +1933,7 @@ function renderHome() {
         <div style="font-size:.82rem;color:var(--ink-soft);margin-top:2px">${done>0?'Keep going! 加油！':'Begin your journey below'}</div>
       </div>
     </div>
+    ${canOfferInstall() ? `<button class="install-btn" onclick="doInstall()">📲 Install as an app on this device</button>` : ''}
     <div class="lessons-grid">${cards}</div></div>`;
 }
 
@@ -2361,6 +2378,53 @@ function checkWordOrder() {
   S.answered=true; S.lastCorrect=(user===correct); S.scoredTotal++; if(S.lastCorrect) S.correct++;
   if(S.lastCorrect) speakChinese(correct);
   commitState(); render();
+}
+
+// ── INSTALL TO HOME SCREEN ────────────────────────────────────────────
+// Chrome/Edge fire `beforeinstallprompt` when the app qualifies for
+// installation. Capturing it lets us show our own button instead of
+// relying on the user finding "Add to Home screen" in the browser menu.
+// iOS Safari never fires this event — installing there is manual via
+// Share -> Add to Home Screen — so we detect iOS and show instructions.
+let _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();          // suppress the default mini-infobar
+  _installPrompt = e;
+  render();                    // reveal our install button
+});
+
+window.addEventListener('appinstalled', () => {
+  _installPrompt = null;
+  render();
+});
+
+function _isIOS() {
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) ||
+         (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS
+}
+function _isStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+         window.navigator.standalone === true;
+}
+function canOfferInstall() {
+  return !_isStandalone() && (!!_installPrompt || _isIOS());
+}
+
+async function doInstall() {
+  if (_installPrompt) {
+    _installPrompt.prompt();
+    try { await _installPrompt.userChoice; } catch(e) {}
+    _installPrompt = null;
+    render();
+  } else if (_isIOS()) {
+    alert('To install on iPhone/iPad:\n\n' +
+          '1. Tap the Share button (square with an arrow)\n' +
+          '2. Scroll down and tap "Add to Home Screen"\n' +
+          '3. Tap Add\n\n' +
+          'Note: this must be done in Safari — Chrome on iOS cannot install apps.');
+  }
 }
 
 // ── SERVICE WORKER ────────────────────────────────────────────────────
